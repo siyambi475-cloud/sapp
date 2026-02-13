@@ -6,54 +6,83 @@
     <title>Siam Video App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .video-card:active { scale: 0.95; }
+        body { background-color: #050505; color: white; font-family: sans-serif; }
+        .video-card { transition: transform 0.2s; cursor: pointer; }
+        .video-card:active { transform: scale(0.95); }
+        iframe { border-radius: 12px; }
     </style>
 </head>
-<body class="bg-black text-white font-sans">
-    <div class="p-4 max-w-4xl mx-auto">
-        <header class="flex justify-between items-center py-4">
-            <h1 class="text-2xl font-black text-indigo-500 italic">SIAM APP</h1>
+<body>
+
+    <div class="max-w-4xl mx-auto p-4">
+        <header class="flex justify-between items-center py-6">
+            <h1 class="text-3xl font-extrabold text-indigo-500 tracking-tighter">SIAM <span class="text-white">STREAM</span></h1>
         </header>
 
-        <input type="text" id="searchBox" onkeyup="search()" placeholder="ভিডিও খুঁজুন..." 
-               class="w-full p-4 rounded-xl bg-gray-900 border border-gray-800 focus:outline-indigo-600 mb-6 shadow-2xl">
+        <div class="relative mb-8">
+            <input type="text" id="searchBox" onkeyup="search()" placeholder="ভিডিওর নাম দিয়ে খুঁজুন..." 
+                   class="w-full p-4 pl-12 rounded-2xl bg-gray-900 border border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 shadow-xl text-white">
+            <span class="absolute left-4 top-4 text-gray-500">🔍</span>
+        </div>
         
-        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
+        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 gap-5">
+            </div>
     </div>
 
-    <div id="player" class="hidden fixed inset-0 bg-black/98 flex flex-col items-center justify-center z-50">
-        <button onclick="closePlayer()" class="absolute top-5 right-5 bg-white text-black px-5 py-2 rounded-full font-bold shadow-lg">বন্ধ করুন ✖</button>
-        <div class="w-full max-w-4xl aspect-video bg-black shadow-2xl border border-gray-800">
-            <iframe id="videoFrame" src="" class="w-full h-full" frameborder="0" allowfullscreen referrerpolicy="no-referrer"></iframe>
+    <div id="player" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-50 p-2">
+        <div class="w-full max-w-4xl">
+            <div class="flex justify-end mb-2">
+                <button onclick="closePlayer()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-red-700 transition">বন্ধ করুন ✖</button>
+            </div>
+            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
+                <iframe id="videoFrame" 
+                        class="absolute inset-0 w-full h-full" 
+                        src="" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen>
+                </iframe>
+            </div>
         </div>
     </div>
 
     <script>
         let allVideos = [];
+        // আপনার গিটহাব ইউজারনেম এবং রিপো অনুযায়ী লিঙ্ক (তাজা ডাটা পেতে টাইমস্ট্যাম্প যোগ করা হয়েছে)
         const DB_URL = `https://raw.githubusercontent.com/siyambi475-cloud/sapp/main/database.json?t=${new Date().getTime()}`;
 
         async function loadVideos() {
             try {
                 const res = await fetch(DB_URL);
+                if (!res.ok) throw new Error("Database load failed");
                 allVideos = await res.json();
                 display(allVideos);
-            } catch (err) { console.error("Data load failed"); }
+            } catch (err) {
+                document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10 text-gray-500">ডাটাবেস লোড হচ্ছে না। চেক করুন database.json ফাইলে অন্তত একটি [] আছে কি না।</p>';
+            }
         }
 
         function display(data) {
             const grid = document.getElementById('grid');
             if(data.length === 0) {
-                grid.innerHTML = '<p class="text-center col-span-2 py-10 text-gray-500">কোনো ভিডিও পাওয়া যায়নি</p>';
+                grid.innerHTML = '<p class="text-center col-span-full py-10 text-gray-500 font-bold text-lg">কোনো ভিডিও নেই!</p>';
                 return;
             }
             grid.innerHTML = data.map(v => `
-                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden cursor-pointer shadow-xl transition-all duration-300">
-                    <img src="${v.thumbnail}" referrerpolicy="no-referrer" class="w-full h-32 md:h-44 object-cover">
-                    <div class="p-3">
-                        <h3 class="text-sm font-bold line-clamp-2">${v.title}</h3>
+                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden shadow-md hover:shadow-indigo-500/20 border border-gray-800">
+                    <div class="relative aspect-video">
+                        <img src="${v.thumbnail || 'https://via.placeholder.com/400x225?text=No+Thumbnail'}" 
+                             class="w-full h-full object-cover" 
+                             alt="${v.title}">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
+                             <span class="text-4xl text-white">▶️</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-sm font-bold line-clamp-2 leading-tight h-10">${v.title}</h3>
                     </div>
                 </div>
-            `).reverse().join(''); // নতুন ভিডিও আগে দেখাবে
+            `).reverse().join('');
         }
 
         function search() {
@@ -63,17 +92,33 @@
         }
 
         function playVideo(url) {
-            document.getElementById('videoFrame').src = url;
-            document.getElementById('player').classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // স্ক্রল বন্ধ করবে
+            const frame = document.getElementById('videoFrame');
+            const player = document.getElementById('player');
+            
+            // ইউটিউব সাধারণ লিঙ্ককে এমবেড লিঙ্কে পরিবর্তন করার শেষ চেষ্টা (যদি ডাটাবেসে ভুল থাকে)
+            let finalUrl = url;
+            if (url.includes("youtu.be/")) {
+                let id = url.split("youtu.be/")[1].split("?")[0];
+                finalUrl = `https://www.youtube.com/embed/${id}?autoplay=1`;
+            } else if (url.includes("youtube.com/watch?v=")) {
+                let id = url.split("v=")[1].split("&")[0];
+                finalUrl = `https://www.youtube.com/embed/${id}?autoplay=1`;
+            }
+
+            frame.src = finalUrl;
+            player.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
         }
 
         function closePlayer() {
-            document.getElementById('videoFrame').src = "";
-            document.getElementById('player').classList.add('hidden');
-            document.body.style.overflow = 'auto'; // স্ক্রল চালু করবে
+            const frame = document.getElementById('videoFrame');
+            const player = document.getElementById('player');
+            frame.src = ""; // ভিডিও বন্ধ করবে
+            player.classList.add('hidden');
+            document.body.style.overflow = 'auto';
         }
 
+        // অ্যাপ চালু হলে ভিডিও লোড হবে
         loadVideos();
     </script>
 </body>

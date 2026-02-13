@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Siam - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white p-6 rounded shadow-lg">
+        <h2 class="text-xl font-bold mb-4 text-indigo-600">নতুন ভিডিও অ্যাড করুন</h2>
+        <input type="text" id="title" placeholder="ভিডিওর টাইটেল" class="w-full p-2 mb-2 border">
+        <input type="text" id="vUrl" placeholder="ভিডিওর লিঙ্ক (Telegram/YouTube)" class="w-full p-2 mb-2 border">
+        <input type="text" id="thumbUrl" placeholder="থাম্বনেইল লিঙ্ক (ImgBB)" class="w-full p-2 mb-4 border">
+        <button onclick="addVideo()" class="bg-indigo-600 text-white w-full py-2 rounded">আপলোড</button>
+    </div>
+
+    <div id="admin-list" class="mt-8 max-w-md mx-auto bg-white p-4 rounded shadow">
+        <h3 class="font-bold border-b pb-2 mb-2">ভিডিও লিস্ট ও ডিলিট</h3>
+        <div id="list">লোডিং...</div>
+    </div>
+
+    <script>
+        // নিচের এই ৩টি তথ্য অবশ্যই আপনার নিজেরগুলো বসাবেন
+        const TOKEN = 'আপনার_কপি_করা_টোকেন_এখানে'; 
+        const USER = 'siyambi475-cloud';
+        const REPO = 'sapp';
+
+        async function addVideo() {
+            const title = document.getElementById('title').value;
+            const url = document.getElementById('vUrl').value;
+            const thumb = document.getElementById('thumbUrl').value;
+
+            const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`, {
+                headers: { 'Authorization': `token ${TOKEN}` }
+            });
+            const data = await res.json();
+            const content = JSON.parse(atob(data.content));
+            
+            content.push({ id: Date.now(), title, url, thumbnail: thumb, views: 0 });
+
+            await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: "Added new video",
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+                    sha: data.sha
+                })
+            });
+            alert("সফলভাবে ভিডিও অ্যাড হয়েছে!");
+            location.reload();
+        }
+
+        async function loadList() {
+            const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`);
+            const data = await res.json();
+            const videos = JSON.parse(atob(data.content));
+            document.getElementById('list').innerHTML = videos.map(v => `
+                <div class="flex justify-between p-2 border-b">
+                    <span>${v.title}</span>
+                    <button onclick="deleteVideo('${v.id}')" class="text-red-500">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteVideo(id) {
+            if(!confirm("ডিলিট করবেন?")) return;
+            const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`, {
+                headers: { 'Authorization': `token ${TOKEN}` }
+            });
+            const data = await res.json();
+            let content = JSON.parse(atob(data.content));
+            content = content.filter(v => v.id != id);
+
+            await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`, {
+                method: 'PUT',
+                headers: { 'Authorization': `token ${TOKEN}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: "Deleted video",
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+                    sha: data.sha
+                })
+            });
+            location.reload();
+        }
+        loadList();
+    </script>
+</body>
+</html>

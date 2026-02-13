@@ -2,18 +2,18 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <title>Siam Admin - Multi-Platform</title>
+    <title>Siam Admin - Auto Link Fixer</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-5">
     <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg">
-        <h2 class="text-2xl font-bold mb-6 text-indigo-600">ভিডিও ম্যানেজার</h2>
+        <h2 class="text-2xl font-bold mb-6 text-indigo-600 text-center">ভিডিও আপলোড (Siam App)</h2>
         
         <div class="space-y-4">
-            <input type="text" id="title" placeholder="ভিডিওর শিরোনাম" class="w-full p-3 border rounded">
-            <input type="text" id="vUrl" placeholder="FB/YT/TikTok লিঙ্ক দিন" class="w-full p-3 border rounded">
-            <input type="text" id="thumbUrl" placeholder="থাম্বনেইল লিঙ্ক (ImgBB)" class="w-full p-3 border rounded">
-            <button onclick="addVideo()" id="btn" class="w-full bg-indigo-600 text-white py-3 rounded font-bold">আপলোড করুন</button>
+            <input type="text" id="title" placeholder="ভিডিওর নাম বা টাইটেল" class="w-full p-3 border rounded-lg focus:outline-indigo-500">
+            <input type="text" id="vUrl" placeholder="যেকোনো ভিডিও লিঙ্ক পেস্ট করুন" class="w-full p-3 border rounded-lg focus:outline-indigo-500">
+            <input type="text" id="thumbUrl" placeholder="থাম্বনেইল লিঙ্ক (Direct Link)" class="w-full p-3 border rounded-lg focus:outline-indigo-500">
+            <button onclick="addVideo()" id="btn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">আপলোড করুন</button>
         </div>
         <div id="list" class="mt-8 space-y-2"></div>
     </div>
@@ -23,14 +23,26 @@
         const USER = 'siyambi475-cloud';
         const REPO = 'sapp';
 
-        // লিঙ্ক কনভার্টার ফাংশন
-        function getEmbedUrl(url) {
-            if (url.includes("youtube.com/shorts")) return url.replace("shorts/", "embed/");
-            if (url.includes("youtube.com/watch")) return url.replace("watch?v=", "embed/");
-            if (url.includes("facebook.com")) return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0`;
+        // এই ফাংশনটি যেকোনো লিঙ্ককে ঠিক করবে
+        function fixLink(url) {
+            if (url.includes("youtu.be/")) {
+                let id = url.split("youtu.be/")[1].split("?")[0];
+                return `https://www.youtube.com/embed/${id}`;
+            }
+            if (url.includes("youtube.com/watch")) {
+                let id = url.split("v=")[1].split("&")[0];
+                return `https://www.youtube.com/embed/${id}`;
+            }
+            if (url.includes("youtube.com/shorts")) {
+                let id = url.split("shorts/")[1].split("?")[0];
+                return `https://www.youtube.com/embed/${id}`;
+            }
+            if (url.includes("facebook.com")) {
+                return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0`;
+            }
             if (url.includes("tiktok.com")) {
-                const videoId = url.split("/video/")[1]?.split("?")[0];
-                return `https://www.tiktok.com/embed/v2/${videoId}`;
+                let id = url.split("/video/")[1]?.split("?")[0];
+                return `https://www.tiktok.com/embed/v2/${id}`;
             }
             return url;
         }
@@ -39,12 +51,13 @@
             const btn = document.getElementById('btn');
             const title = document.getElementById('title').value;
             const rawUrl = document.getElementById('vUrl').value;
-            const thumb = document.getElementById('thumbUrl').value;
+            let thumb = document.getElementById('thumbUrl').value;
 
-            if(!title || !rawUrl) return alert("সব তথ্য দিন");
-            btn.innerText = "প্রসেসিং...";
+            if(!title || !rawUrl) return alert("দয়া করে নাম এবং লিঙ্ক দিন!");
+            btn.innerText = "অপেক্ষা করুন...";
+            btn.disabled = true;
 
-            const embedUrl = getEmbedUrl(rawUrl);
+            const finalUrl = fixLink(rawUrl);
 
             try {
                 const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`, {
@@ -53,34 +66,31 @@
                 const data = await res.json();
                 const content = JSON.parse(atob(data.content));
                 
-                content.push({ id: Date.now(), title, url: embedUrl, thumbnail: thumb, views: 0 });
+                content.push({ 
+                    id: Date.now(), 
+                    title: title, 
+                    url: finalUrl, 
+                    thumbnail: thumb || 'https://via.placeholder.com/300x150?text=No+Thumbnail', 
+                    views: 0 
+                });
 
                 await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`, {
                     method: 'PUT',
                     headers: { 'Authorization': `token ${TOKEN}` },
                     body: JSON.stringify({
-                        message: "Video Added",
+                        message: "New Video Added",
                         content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
                         sha: data.sha
                     })
                 });
-                alert("সফলভাবে অ্যাড হয়েছে!");
+                alert("ভিডিও সফলভাবে অ্যাড হয়েছে!");
                 location.reload();
-            } catch (e) { alert("ভুল হয়েছে! টোকেন চেক করুন।"); }
+            } catch (e) { 
+                alert("সমস্যা হয়েছে! গিটহাব টোকেন বা ফাইল চেক করুন।");
+                btn.innerText = "আবার চেষ্টা করুন";
+                btn.disabled = false;
+            }
         }
-
-        async function loadList() {
-            const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`);
-            const data = await res.json();
-            const videos = JSON.parse(atob(data.content));
-            document.getElementById('list').innerHTML = videos.map(v => `
-                <div class="flex justify-between p-2 border-b bg-gray-50 text-sm">
-                    <span class="truncate w-40">${v.title}</span>
-                    <button onclick="deleteVideo('${v.id}')" class="text-red-500">Delete</button>
-                </div>
-            `).join('');
-        }
-        loadList();
     </script>
 </body>
 </html>

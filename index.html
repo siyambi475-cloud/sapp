@@ -10,6 +10,15 @@
         .video-card { transition: transform 0.2s; cursor: pointer; }
         .video-card:active { transform: scale(0.95); }
         iframe { border-radius: 12px; }
+        /* প্রিমিয়াম বাটনের জন্য বিশেষ এনিমেশন */
+        .premium-btn {
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+        .premium-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -17,6 +26,11 @@
     <div class="max-w-4xl mx-auto p-4">
         <header class="flex justify-between items-center py-6">
             <h1 class="text-3xl font-extrabold text-indigo-500 tracking-tighter">SIAM <span class="text-white">STREAM</span></h1>
+            
+            <a href="https://www.facebook.com/profile.php?id=61556025009071" target="_blank" 
+               class="premium-btn text-black px-4 py-2 rounded-full font-bold text-xs md:text-sm flex items-center gap-2 transition-all duration-300">
+                <span>💎</span> Get Premium
+            </a>
         </header>
 
         <div class="relative mb-8">
@@ -48,7 +62,6 @@
 
     <script>
         let allVideos = [];
-        // আপনার গিটহাব ইউজারনেম এবং রিপো অনুযায়ী লিঙ্ক (তাজা ডাটা পেতে টাইমস্ট্যাম্প যোগ করা হয়েছে)
         const DB_URL = `https://raw.githubusercontent.com/siyambi475-cloud/sapp/main/database.json?t=${new Date().getTime()}`;
 
         async function loadVideos() {
@@ -58,7 +71,7 @@
                 allVideos = await res.json();
                 display(allVideos);
             } catch (err) {
-                document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10 text-gray-500">ডাটাবেস লোড হচ্ছে না। চেক করুন database.json ফাইলে অন্তত একটি [] আছে কি না।</p>';
+                document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10 text-gray-500">ডাটাবেস লোড হচ্ছে না। database.json ফাইলটি চেক করুন।</p>';
             }
         }
 
@@ -95,7 +108,6 @@
             const frame = document.getElementById('videoFrame');
             const player = document.getElementById('player');
             
-            // ইউটিউব সাধারণ লিঙ্ককে এমবেড লিঙ্কে পরিবর্তন করার শেষ চেষ্টা (যদি ডাটাবেসে ভুল থাকে)
             let finalUrl = url;
             if (url.includes("youtu.be/")) {
                 let id = url.split("youtu.be/")[1].split("?")[0];
@@ -113,12 +125,11 @@
         function closePlayer() {
             const frame = document.getElementById('videoFrame');
             const player = document.getElementById('player');
-            frame.src = ""; // ভিডিও বন্ধ করবে
+            frame.src = "";
             player.classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
 
-        // অ্যাপ চালু হলে ভিডিও লোড হবে
         loadVideos();
     </script>
 </body>

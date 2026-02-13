@@ -10,7 +10,6 @@
         .video-card { transition: transform 0.2s; cursor: pointer; }
         .video-card:active { transform: scale(0.95); }
         iframe { border-radius: 12px; }
-        /* প্রিমিয়াম বাটনের জন্য বিশেষ এনিমেশন */
         .premium-btn {
             background: linear-gradient(90deg, #ffd700, #ff8c00);
             box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
@@ -18,6 +17,14 @@
         .premium-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+        }
+        /* বিজ্ঞাপন সুন্দরভাবে দেখানোর জন্য */
+        .ad-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            min-height: 60px;
         }
     </style>
 </head>
@@ -32,6 +39,19 @@
                 <span>💎</span> Get Premium
             </a>
         </header>
+
+        <div class="ad-container">
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '0ad7bfc68209f75e68f51372c9acc69c',
+                    'format' : 'iframe',
+                    'height' : 60,
+                    'width' : 468,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/0ad7bfc68209f75e68f51372c9acc69c/invoke.js"></script>
+        </div>
 
         <div class="relative mb-8">
             <input type="text" id="searchBox" onkeyup="search()" placeholder="ভিডিওর নাম দিয়ে খুঁজুন..." 

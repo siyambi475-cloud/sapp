@@ -2,26 +2,46 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <title>Siam Admin - Auto Fixer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siam Video Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-5">
-    <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg">
-        <h2 class="text-2xl font-bold mb-6 text-indigo-600 text-center">ভিডিও আপলোড (Siam App)</h2>
+    <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-2xl border border-gray-200">
+        <h2 class="text-2xl font-bold mb-6 text-indigo-700 text-center uppercase tracking-wider">Add New Video</h2>
+        
         <div class="space-y-4">
-            <input type="text" id="title" placeholder="ভিডিওর নাম" class="w-full p-3 border rounded-lg">
-            <input type="text" id="vUrl" placeholder="ইউটিউব/ফেসবুক লিঙ্ক" class="w-full p-3 border rounded-lg">
-            <input type="text" id="thumbUrl" placeholder="থাম্বনেইল লিঙ্ক (.jpg / .png)" class="w-full p-3 border rounded-lg">
-            <button onclick="addVideo()" id="btn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold">আপলোড করুন</button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">ভিডিওর টাইটেল</label>
+                <input type="text" id="title" placeholder="যেমন: নতুন বাংলা মুভি" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">ভিডিও লিঙ্ক (YouTube/Facebook/Shorts)</label>
+                <input type="text" id="vUrl" placeholder="লিঙ্কটি এখানে পেস্ট করুন" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">থাম্বনেইল লিঙ্ক (.jpg বা .png)</label>
+                <input type="text" id="thumbUrl" placeholder="https://i.postimg.cc/..." class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+
+            <button onclick="addVideo()" id="btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-bold text-lg transition duration-300 shadow-md">
+                ভিডিও আপলোড করুন
+            </button>
         </div>
+        
+        <p id="msg" class="mt-4 text-center text-sm font-semibold"></p>
     </div>
 
     <script>
-        // নিচের এই লাইনে ghp_ দিয়ে শুরু হওয়া আপনার একদম নতুন টোকেনটি বসান
-        const TOKEN = 'এখানে_আপনার_নতুন_টোকেন_বসান'; 
+        // আপনার দেওয়া টোকেনটি এখানে সেট করা হয়েছে
+        const TOKEN = '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'.trim();
         const USER = 'siyambi475-cloud';
         const REPO = 'sapp';
+        const FILE = 'database.json';
 
+        // লিঙ্ক অটোমেটিক ঠিক করার ফাংশন
         function fixLink(url) {
             if (url.includes("youtu.be/")) {
                 let id = url.split("youtu.be/")[1].split("?")[0];
@@ -29,6 +49,10 @@
             }
             if (url.includes("youtube.com/watch")) {
                 let id = url.split("v=")[1].split("&")[0];
+                return `https://www.youtube.com/embed/${id}`;
+            }
+            if (url.includes("youtube.com/shorts")) {
+                let id = url.split("shorts/")[1].split("?")[0];
                 return `https://www.youtube.com/embed/${id}`;
             }
             if (url.includes("facebook.com")) {
@@ -39,51 +63,67 @@
 
         async function addVideo() {
             const btn = document.getElementById('btn');
+            const msg = document.getElementById('msg');
             const title = document.getElementById('title').value;
             const rawUrl = document.getElementById('vUrl').value;
             const thumb = document.getElementById('thumbUrl').value;
 
-            if(!title || !rawUrl) return alert("সব তথ্য দিন!");
-            btn.innerText = "আপলোড হচ্ছে...";
+            if(!title || !rawUrl || !thumb) {
+                alert("সবগুলো বক্স পূরণ করুন!");
+                return;
+            }
+
+            btn.innerText = "প্রসেসিং হচ্ছে...";
             btn.disabled = true;
+            msg.innerText = "";
 
             const finalUrl = fixLink(rawUrl);
 
             try {
-                const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`, {
+                // ১. বর্তমান ডাটাবেস ফাইলটি নামানো
+                const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`, {
                     headers: { 'Authorization': `token ${TOKEN}` }
                 });
-                const data = await res.json();
-                const content = JSON.parse(atob(data.content));
                 
+                if(!res.ok) throw new Error("টোকেনটি কাজ করছে না! নতুন টোকেন দিন।");
+                
+                const data = await res.json();
+                const content = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+                
+                // ২. নতুন ডাটা যোগ করা
                 content.push({ 
                     id: Date.now(), 
                     title: title, 
                     url: finalUrl, 
-                    thumbnail: thumb, 
-                    views: 0 
+                    thumbnail: thumb 
                 });
 
-                const update = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/database.json`, {
+                // ৩. গিটহাবে আপডেট পাঠানো
+                const update = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`, {
                     method: 'PUT',
                     headers: { 'Authorization': `token ${TOKEN}` },
                     body: JSON.stringify({
-                        message: "Video Added",
-                        content: btoa(unescape(encodeURIComponent(JSON.stringify(content)))),
+                        message: `Added: ${title}`,
+                        content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
                         sha: data.sha
                     })
                 });
 
                 if(update.ok) {
-                    alert("সাফল্যের সাথে অ্যাড হয়েছে!");
-                    location.reload();
+                    msg.className = "mt-4 text-center text-green-600 font-semibold";
+                    msg.innerText = "সাফল্যের সাথে ভিডিও অ্যাড হয়েছে!";
+                    document.getElementById('title').value = "";
+                    document.getElementById('vUrl').value = "";
+                    document.getElementById('thumbUrl').value = "";
                 } else {
-                    alert("টোকেন ব্লক হয়েছে! নতুন টোকেন লাগবে।");
+                    throw new Error("আপলোড ব্যর্থ হয়েছে।");
                 }
-            } catch (e) { 
-                alert("এরর: " + e.message);
+
+            } catch (err) {
+                msg.className = "mt-4 text-center text-red-600 font-semibold";
+                msg.innerText = err.message;
             } finally {
-                btn.innerText = "আপলোড করুন";
+                btn.innerText = "ভিডিও আপলোড করুন";
                 btn.disabled = false;
             }
         }

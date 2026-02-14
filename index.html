@@ -6,7 +6,7 @@
     <title>Siam Video App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #050505; color: white; font-family: sans-serif; }
+        body { background-color: #050505; color: white; font-family: sans-serif; overflow-x: hidden; }
         .video-card { transition: transform 0.2s; cursor: pointer; }
         .video-card:active { transform: scale(0.95); }
         iframe { border-radius: 12px; }
@@ -14,43 +14,64 @@
             background: linear-gradient(90deg, #ffd700, #ff8c00);
             box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
         }
-        .premium-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+
+        /* Pull to Refresh CSS */
+        #ptr-element {
+            position: fixed;
+            top: -60px;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+            z-index: 100;
         }
-        .ad-slot { display: flex; justify-content: center; margin: 15px 0; min-height: 60px; }
+        .ptr-icon {
+            width: 35px;
+            height: 35px;
+            border: 3px solid #6366f1;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            display: none;
+        }
+        .spinning {
+            display: block;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
+    <div id="ptr-element">
+        <div class="ptr-icon" id="loader-circle"></div>
+        <span id="ptr-text" class="text-indigo-500 font-bold text-sm">↓ টানুন</span>
+    </div>
+
     <script src="https://pl28711137.effectivegatecpm.com/7f/fc/cc/7ffccc5cdce1e1cdae99d6da389ce741.js"></script>
 
-    <div class="max-w-4xl mx-auto p-4">
+    <div class="max-w-4xl mx-auto p-4" id="content-area">
         <header class="flex justify-between items-center py-6">
             <h1 class="text-3xl font-extrabold text-indigo-500 tracking-tighter">SIAM <span class="text-white">STREAM</span></h1>
             
             <a href="https://www.facebook.com/profile.php?id=61556025009071" target="_blank" 
-               class="premium-btn text-black px-4 py-2 rounded-full font-bold text-xs md:text-sm flex items-center gap-2 transition-all duration-300">
+               class="premium-btn text-black px-4 py-2 rounded-full font-bold text-xs md:text-sm flex items-center gap-2">
                 <span>💎</span> Get Premium
             </a>
         </header>
 
-        <div class="ad-slot">
+        <div class="flex justify-center mb-6 min-h-[60px]">
             <script type="text/javascript">
-                atOptions = {
-                    'key' : '71bf410d2cb5c72fb55a3eb2831bc4ac',
-                    'format' : 'iframe',
-                    'height' : 60,
-                    'width' : 468,
-                    'params' : {}
-                };
+                atOptions = { 'key' : '71bf410d2cb5c72fb55a3eb2831bc4ac', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
             </script>
             <script type="text/javascript" src="https://www.highperformanceformat.com/71bf410d2cb5c72fb55a3eb2831bc4ac/invoke.js"></script>
         </div>
 
         <div class="relative mb-8">
             <input type="text" id="searchBox" onkeyup="search()" placeholder="ভিডিওর নাম দিয়ে খুঁজুন..." 
-                   class="w-full p-4 pl-12 rounded-2xl bg-gray-900 border border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 shadow-xl text-white">
+                   class="w-full p-4 pl-12 rounded-2xl bg-gray-900 border border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-white">
             <span class="absolute left-4 top-4 text-gray-500">🔍</span>
         </div>
         
@@ -60,9 +81,9 @@
     <div id="player" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-50 p-2">
         <div class="w-full max-w-4xl">
             <div class="flex justify-end mb-2">
-                <button onclick="closePlayer()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-red-700 transition">বন্ধ করুন ✖</button>
+                <button onclick="closePlayer()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold">বন্ধ করুন ✖</button>
             </div>
-            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
+            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-gray-800">
                 <iframe id="videoFrame" class="absolute inset-0 w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
             </div>
         </div>
@@ -72,48 +93,69 @@
         let allVideos = [];
         const DB_URL = `https://raw.githubusercontent.com/siyambi475-cloud/sapp/main/database.json?t=${new Date().getTime()}`;
 
+        // Pull to Refresh Logic
+        let startY = 0;
+        const ptrElement = document.getElementById('ptr-element');
+        const loaderCircle = document.getElementById('loader-circle');
+        const ptrText = document.getElementById('ptr-text');
+
+        window.addEventListener('touchstart', (e) => {
+            if (window.scrollY === 0) startY = e.touches[0].pageY;
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            const y = e.touches[0].pageY;
+            const diff = y - startY;
+            if (window.scrollY === 0 && diff > 0 && diff < 100) {
+                ptrElement.style.transform = `translateY(${diff}px)`;
+                ptrText.innerText = diff > 70 ? "ছেড়ে দিন" : "↓ টানুন";
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchend', async (e) => {
+            const diff = e.changedTouches[0].pageY - startY;
+            if (window.scrollY === 0 && diff > 70) {
+                ptrText.innerText = "";
+                loaderCircle.classList.add('spinning');
+                await loadVideos();
+                setTimeout(() => {
+                    ptrElement.style.transform = `translateY(0)`;
+                    loaderCircle.classList.remove('spinning');
+                }, 500);
+            } else {
+                ptrElement.style.transform = `translateY(0)`;
+            }
+        });
+
         async function loadVideos() {
             try {
                 const res = await fetch(DB_URL);
                 allVideos = await res.json();
                 display(allVideos);
             } catch (err) {
-                document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10 text-gray-500">ডাটাবেস লোড হচ্ছে না।</p>';
+                document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10">লোড হচ্ছে না...</p>';
             }
         }
 
         function display(data) {
             const grid = document.getElementById('grid');
-            if(data.length === 0) {
-                grid.innerHTML = '<p class="text-center col-span-full py-10 text-gray-500 font-bold text-lg">কোনো ভিডিও নেই!</p>';
-                return;
-            }
-            grid.innerHTML = data.map(v => `
-                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden shadow-md border border-gray-800">
-                    <div class="relative aspect-video">
-                        <img src="${v.thumbnail || 'https://via.placeholder.com/400x225'}" class="w-full h-full object-cover">
-                    </div>
-                    <div class="p-4">
-                        <h3 class="text-sm font-bold line-clamp-2 h-10">${v.title}</h3>
-                    </div>
+            grid.innerHTML = data.length === 0 ? '<p class="text-center col-span-full py-10">কোনো ভিডিও নেই!</p>' : 
+            data.map(v => `
+                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden border border-gray-800">
+                    <img src="${v.thumbnail || 'https://via.placeholder.com/400x225'}" class="w-full aspect-video object-cover">
+                    <div class="p-4"><h3 class="text-xs font-bold line-clamp-2 h-10">${v.title}</h3></div>
                 </div>
             `).reverse().join('');
         }
 
         function search() {
             const q = document.getElementById('searchBox').value.toLowerCase();
-            const filtered = allVideos.filter(v => v.title.toLowerCase().includes(q));
-            display(filtered);
+            display(allVideos.filter(v => v.title.toLowerCase().includes(q)));
         }
 
         function playVideo(url) {
             const frame = document.getElementById('videoFrame');
-            let id = "";
-            if (url.includes("youtu.be/")) {
-                id = url.split("youtu.be/")[1].split("?")[0];
-            } else if (url.includes("v=")) {
-                id = url.split("v=")[1].split("&")[0];
-            }
+            let id = url.includes("youtu.be/") ? url.split("youtu.be/")[1].split("?")[0] : url.split("v=")[1]?.split("&")[0];
             frame.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
             document.getElementById('player').classList.remove('hidden');
             document.body.style.overflow = 'hidden';

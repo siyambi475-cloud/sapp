@@ -2,9 +2,13 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siam Video App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title> সবার আগে সিরিয়াল দেখুন Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    
     <style>
         body { background-color: #050505; color: white; font-family: sans-serif; overflow-x: hidden; }
         .video-card { transition: transform 0.2s; cursor: pointer; }
@@ -17,83 +21,146 @@
 
         /* Pull to Refresh CSS */
         #ptr-element {
-            position: fixed;
-            top: -60px;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s ease;
-            z-index: 100;
+            position: fixed; top: -60px; left: 0; width: 100%; height: 60px;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s ease; z-index: 100;
         }
         .ptr-icon {
-            width: 35px;
-            height: 35px;
-            border: 3px solid #6366f1;
-            border-top: 3px solid transparent;
-            border-radius: 50%;
-            display: none;
+            width: 35px; height: 35px; border: 3px solid #6366f1;
+            border-top: 3px solid transparent; border-radius: 50%; display: none;
         }
-        .spinning {
-            display: block;
-            animation: spin 0.8s linear infinite;
-        }
+        .spinning { display: block; animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="ptr-element">
-        <div class="ptr-icon" id="loader-circle"></div>
-        <span id="ptr-text" class="text-indigo-500 font-bold text-sm">↓ টানুন</span>
-    </div>
-
-    <script src="https://pl28711137.effectivegatecpm.com/7f/fc/cc/7ffccc5cdce1e1cdae99d6da389ce741.js"></script>
-
-    <div class="max-w-4xl mx-auto p-4" id="content-area">
-        <header class="flex justify-between items-center py-6">
-            <h1 class="text-3xl font-extrabold text-indigo-500 tracking-tighter">SIAM <span class="text-white">STREAM</span></h1>
-            
-            <a href="https://www.facebook.com/profile.php?id=61556025009071" target="_blank" 
-               class="premium-btn text-black px-4 py-2 rounded-full font-bold text-xs md:text-sm flex items-center gap-2">
-                <span>💎</span> Get Premium
-            </a>
-        </header>
-
-        <div class="flex justify-center mb-6 min-h-[60px]">
-            <script type="text/javascript">
-                atOptions = { 'key' : '71bf410d2cb5c72fb55a3eb2831bc4ac', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
-            </script>
-            <script type="text/javascript" src="https://www.highperformanceformat.com/71bf410d2cb5c72fb55a3eb2831bc4ac/invoke.js"></script>
-        </div>
-
-        <div class="relative mb-8">
-            <input type="text" id="searchBox" onkeyup="search()" placeholder="ভিডিওর নাম দিয়ে খুঁজুন..." 
-                   class="w-full p-4 pl-12 rounded-2xl bg-gray-900 border border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-white">
-            <span class="absolute left-4 top-4 text-gray-500">🔍</span>
-        </div>
-        
-        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 gap-5"></div>
-    </div>
-
-    <div id="player" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-50 p-2">
-        <div class="w-full max-w-4xl">
-            <div class="flex justify-end mb-2">
-                <button onclick="closePlayer()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold">বন্ধ করুন ✖</button>
+    <div id="auth-section" class="fixed inset-0 bg-black z-[500] flex items-center justify-center p-6">
+        <div class="w-full max-w-md bg-gray-900 p-8 rounded-3xl border border-gray-800 shadow-2xl">
+            <h2 id="auth-title" class="text-3xl font-extrabold text-indigo-500 text-center mb-6 uppercase tracking-widest">Siam Login</h2>
+            <div class="space-y-4">
+                <input type="email" id="email" placeholder="ইমেইল দিন" class="w-full p-4 rounded-xl bg-black border border-gray-800 outline-none focus:ring-2 focus:ring-indigo-600 text-white">
+                <input type="password" id="password" placeholder="পাসওয়ার্ড দিন" class="w-full p-4 rounded-xl bg-black border border-gray-800 outline-none focus:ring-2 focus:ring-indigo-600 text-white">
+                <button onclick="handleAuth()" id="auth-btn" class="w-full bg-indigo-600 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition active:scale-95 shadow-lg shadow-indigo-500/20">প্রবেশ করুন</button>
+                <p class="text-center text-sm text-gray-400">
+                    <span id="auth-toggle-text">অ্যাকাউন্ট নেই?</span> 
+                    <button onclick="toggleAuth()" id="auth-toggle-btn" class="text-indigo-500 font-bold ml-1">সাইন-আপ করুন</button>
+                </p>
+                <p id="auth-error" class="text-red-500 text-xs text-center mt-2 hidden"></p>
             </div>
-            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-gray-800">
+        </div>
+    </div>
+
+    <div id="app-content" class="hidden">
+        <div id="ptr-element">
+            <div class="ptr-icon" id="loader-circle"></div>
+            <span id="ptr-text" class="text-indigo-500 font-bold text-sm">↓ টানুন</span>
+        </div>
+
+        <script src="https://pl28711137.effectivegatecpm.com/7f/fc/cc/7ffccc5cdce1e1cdae99d6da389ce741.js"></script>
+
+        <div class="max-w-4xl mx-auto p-4">
+            <header class="flex justify-between items-center py-6">
+                <h1 class="text-3xl font-extrabold text-indigo-500 tracking-tighter">SIAM <span class="text-white">STREAM</span></h1>
+                
+                <div class="flex items-center gap-3">
+                    <a href="https://www.facebook.com/profile.php?id=61556025009071" target="_blank" 
+                       class="premium-btn text-black px-4 py-2 rounded-full font-bold text-xs md:text-sm flex items-center gap-2">
+                        <span>💎</span> Get Premium
+                    </a>
+                    <button onclick="logout()" class="text-gray-400 text-[10px] border border-gray-800 px-2 py-1 rounded-md uppercase">Logout</button>
+                </div>
+            </header>
+
+            <div class="flex justify-center mb-6 min-h-[60px]">
+                <script type="text/javascript">
+                    atOptions = { 'key' : '71bf410d2cb5c72fb55a3eb2831bc4ac', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+                </script>
+                <script type="text/javascript" src="https://www.highperformanceformat.com/71bf410d2cb5c72fb55a3eb2831bc4ac/invoke.js"></script>
+            </div>
+
+            <div class="relative mb-8">
+                <input type="text" id="searchBox" onkeyup="search()" placeholder="ভিডিওর নাম দিয়ে খুঁজুন..." 
+                       class="w-full p-4 pl-12 rounded-2xl bg-gray-900 border border-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-white">
+                <span class="absolute left-4 top-4 text-gray-500">🔍</span>
+            </div>
+            
+            <div id="grid" class="grid grid-cols-2 md:grid-cols-3 gap-5"></div>
+        </div>
+    </div>
+
+    <div id="player" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[600] p-2">
+        <div class="w-full max-w-4xl text-right">
+            <button onclick="closePlayer()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold mb-2 shadow-lg active:scale-95 transition">বন্ধ করুন ✖</button>
+            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
                 <iframe id="videoFrame" class="absolute inset-0 w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
             </div>
         </div>
     </div>
 
     <script>
+        // --- ফায়ারবেস কনফিগ (আপনার অরিজিনাল ডাটা) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBiVxBxExXHd2OqWa5LqZNE5a2t-6j1n9Y",
+          authDomain: "sapp-38df8.firebaseapp.com",
+          projectId: "sapp-38df8",
+          storageBucket: "sapp-38df8.firebasestorage.app",
+          messagingSenderId: "335406842966",
+          appId: "1:335406842966:web:1cccf3395fb3e11460a7f7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        let isLoginMode = true;
         let allVideos = [];
         const DB_URL = `https://raw.githubusercontent.com/siyambi475-cloud/sapp/main/database.json?t=${new Date().getTime()}`;
 
-        // Pull to Refresh Logic
+        // ফায়ারবেস লগিন ও সাইন-আপ হ্যান্ডলার
+        function toggleAuth() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
+            document.getElementById('auth-btn').innerText = isLoginMode ? "প্রবেশ করুন" : "অ্যাকাউন্ট খুলুন";
+            document.getElementById('auth-toggle-btn').innerText = isLoginMode ? "সাইন-আপ করুন" : "লগিন করুন";
+            document.getElementById('auth-error').classList.add('hidden');
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('auth-error');
+            if(!email || !password) { alert("সব পূরণ করুন!"); return; }
+
+            try {
+                if (isLoginMode) {
+                    await auth.signInWithEmailAndPassword(email, password);
+                } else {
+                    await auth.createUserWithEmailAndPassword(email, password);
+                    alert("অ্যাকাউন্ট খোলা হয়েছে! এখন লগিন করুন।");
+                    toggleAuth();
+                }
+            } catch (error) {
+                errorEl.innerText = "ভুল ইমেইল অথবা পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)!";
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        // ইউজার লগিন স্ট্যাটাস চেক
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                loadVideos();
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('hidden');
+            }
+        });
+
+        function logout() { auth.signOut(); }
+
+        // Pull to Refresh Logic (আপনার অরিজিনাল কোড থেকে)
         let startY = 0;
         const ptrElement = document.getElementById('ptr-element');
         const loaderCircle = document.getElementById('loader-circle');
@@ -127,6 +194,7 @@
             }
         });
 
+        // ভিডিও ডাটাবেস লোড ফাংশন
         async function loadVideos() {
             try {
                 const res = await fetch(DB_URL);
@@ -141,9 +209,9 @@
             const grid = document.getElementById('grid');
             grid.innerHTML = data.length === 0 ? '<p class="text-center col-span-full py-10">কোনো ভিডিও নেই!</p>' : 
             data.map(v => `
-                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden border border-gray-800">
+                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-lg">
                     <img src="${v.thumbnail || 'https://via.placeholder.com/400x225'}" class="w-full aspect-video object-cover">
-                    <div class="p-4"><h3 class="text-xs font-bold line-clamp-2 h-10">${v.title}</h3></div>
+                    <div class="p-4"><h3 class="text-xs font-bold line-clamp-2 h-10 leading-5 text-gray-200">${v.title}</h3></div>
                 </div>
             `).reverse().join('');
         }
@@ -166,8 +234,6 @@
             document.getElementById('player').classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
-
-        loadVideos();
     </script>
 </body>
 </html>

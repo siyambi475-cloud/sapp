@@ -18,17 +18,12 @@
             transform: scale(1.05);
             box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
         }
-        /* বিজ্ঞাপন সুন্দরভাবে দেখানোর জন্য */
-        .ad-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px 0;
-            min-height: 60px;
-        }
+        .ad-slot { display: flex; justify-content: center; margin: 15px 0; min-height: 60px; }
     </style>
 </head>
 <body>
+
+    <script src="https://pl28711137.effectivegatecpm.com/7f/fc/cc/7ffccc5cdce1e1cdae99d6da389ce741.js"></script>
 
     <div class="max-w-4xl mx-auto p-4">
         <header class="flex justify-between items-center py-6">
@@ -40,17 +35,17 @@
             </a>
         </header>
 
-        <div class="ad-container">
+        <div class="ad-slot">
             <script type="text/javascript">
                 atOptions = {
-                    'key' : '0ad7bfc68209f75e68f51372c9acc69c',
+                    'key' : '71bf410d2cb5c72fb55a3eb2831bc4ac',
                     'format' : 'iframe',
                     'height' : 60,
                     'width' : 468,
                     'params' : {}
                 };
             </script>
-            <script type="text/javascript" src="https://www.highperformanceformat.com/0ad7bfc68209f75e68f51372c9acc69c/invoke.js"></script>
+            <script type="text/javascript" src="https://www.highperformanceformat.com/71bf410d2cb5c72fb55a3eb2831bc4ac/invoke.js"></script>
         </div>
 
         <div class="relative mb-8">
@@ -59,8 +54,7 @@
             <span class="absolute left-4 top-4 text-gray-500">🔍</span>
         </div>
         
-        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 gap-5">
-            </div>
+        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 gap-5"></div>
     </div>
 
     <div id="player" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-50 p-2">
@@ -69,13 +63,7 @@
                 <button onclick="closePlayer()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:bg-red-700 transition">বন্ধ করুন ✖</button>
             </div>
             <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
-                <iframe id="videoFrame" 
-                        class="absolute inset-0 w-full h-full" 
-                        src="" 
-                        frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                        allowfullscreen>
-                </iframe>
+                <iframe id="videoFrame" class="absolute inset-0 w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
             </div>
         </div>
     </div>
@@ -87,11 +75,10 @@
         async function loadVideos() {
             try {
                 const res = await fetch(DB_URL);
-                if (!res.ok) throw new Error("Database load failed");
                 allVideos = await res.json();
                 display(allVideos);
             } catch (err) {
-                document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10 text-gray-500">ডাটাবেস লোড হচ্ছে না। database.json ফাইলটি চেক করুন।</p>';
+                document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10 text-gray-500">ডাটাবেস লোড হচ্ছে না।</p>';
             }
         }
 
@@ -102,17 +89,12 @@
                 return;
             }
             grid.innerHTML = data.map(v => `
-                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden shadow-md hover:shadow-indigo-500/20 border border-gray-800">
+                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden shadow-md border border-gray-800">
                     <div class="relative aspect-video">
-                        <img src="${v.thumbnail || 'https://via.placeholder.com/400x225?text=No+Thumbnail'}" 
-                             class="w-full h-full object-cover" 
-                             alt="${v.title}">
-                        <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/40">
-                             <span class="text-4xl text-white">▶️</span>
-                        </div>
+                        <img src="${v.thumbnail || 'https://via.placeholder.com/400x225'}" class="w-full h-full object-cover">
                     </div>
                     <div class="p-4">
-                        <h3 class="text-sm font-bold line-clamp-2 leading-tight h-10">${v.title}</h3>
+                        <h3 class="text-sm font-bold line-clamp-2 h-10">${v.title}</h3>
                     </div>
                 </div>
             `).reverse().join('');
@@ -126,27 +108,20 @@
 
         function playVideo(url) {
             const frame = document.getElementById('videoFrame');
-            const player = document.getElementById('player');
-            
-            let finalUrl = url;
+            let id = "";
             if (url.includes("youtu.be/")) {
-                let id = url.split("youtu.be/")[1].split("?")[0];
-                finalUrl = `https://www.youtube.com/embed/${id}?autoplay=1`;
-            } else if (url.includes("youtube.com/watch?v=")) {
-                let id = url.split("v=")[1].split("&")[0];
-                finalUrl = `https://www.youtube.com/embed/${id}?autoplay=1`;
+                id = url.split("youtu.be/")[1].split("?")[0];
+            } else if (url.includes("v=")) {
+                id = url.split("v=")[1].split("&")[0];
             }
-
-            frame.src = finalUrl;
-            player.classList.remove('hidden');
+            frame.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+            document.getElementById('player').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
 
         function closePlayer() {
-            const frame = document.getElementById('videoFrame');
-            const player = document.getElementById('player');
-            frame.src = "";
-            player.classList.add('hidden');
+            document.getElementById('videoFrame').src = "";
+            document.getElementById('player').classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
 

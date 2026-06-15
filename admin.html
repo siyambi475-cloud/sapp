@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Manage Videos & Notifications</title>
+    <title>Admin Panel - Manage Videos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -13,48 +13,36 @@
 
     <div class="max-w-4xl mx-auto space-y-8">
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-xl">
-                <h2 class="text-xl font-extrabold text-indigo-700 text-center mb-4 uppercase tracking-wider">ADD NEW VIDEO</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">ভিডিওর টাইটেল</label>
-                        <input type="text" id="title" placeholder="যেমন: নতুন বাংলা মুভি" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-300 outline-none text-sm text-gray-900">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">ভিডিও লিংক</label>
-                        <input type="text" id="url" placeholder="লিংকটি এখানে পেস্ট করুন" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-300 outline-none text-sm text-gray-900">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">থাম্বনেইল লিংক</label>
-                        <input type="text" id="thumbnail" placeholder="https://i.postimg.cc/..." class="w-full p-3 rounded-xl bg-gray-50 border border-gray-300 outline-none text-sm text-gray-900">
-                    </div>
-                    <button onclick="uploadVideo()" class="w-full bg-indigo-600 py-3 rounded-xl font-bold text-white hover:bg-indigo-700 transition active:scale-95 shadow-md">ভিডিও আপলোড করুন</button>
-                    <p id="success-msg" class="text-center text-green-600 font-bold text-xs hidden">🎉 ভিডিও সফলভাবে আপলোড হয়েছে!</p>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-xl flex flex-col justify-between">
+        <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-200 shadow-xl max-w-md mx-auto">
+            <h2 class="text-2xl font-extrabold text-indigo-700 text-center mb-6 uppercase tracking-wider">ADD NEW VIDEO (FIREBASE)</h2>
+            
+            <div class="space-y-4">
                 <div>
-                    <h2 class="text-xl font-extrabold text-red-600 text-center mb-4 uppercase tracking-wider">📢 SEND PUSH NOTIFICATION</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">নোটিফিকেশন টাইটেল</label>
-                            <input type="text" id="notif-title" placeholder="যেমন: নতুন পর্ব আপলোড হয়েছে!" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-300 outline-none text-sm text-gray-900">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">নোটিফিকেশন মেসেজ</label>
-                            <textarea id="notif-body" placeholder="যেমন: এখনই ক্লিক করে সবার আগে সিরিয়ালটি দেখে নিন..." class="w-full p-3 rounded-xl bg-gray-50 border border-gray-300 outline-none text-sm text-gray-900 h-20"></textarea>
-                        </div>
-                    </div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">ভিডিওর টাইটেল</label>
+                    <input type="text" id="title" placeholder="যেমন: নতুন বাংলা মুভি" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-600 text-gray-900">
                 </div>
-                <button onclick="sendNotification()" class="w-full bg-red-500 py-3 rounded-xl font-bold text-white hover:bg-red-600 transition active:scale-95 shadow-md mt-4">সবাইকে নোটিফিকেশন পাঠান 🚀</button>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">ভিডিও লিংক (YouTube/Facebook/Shorts)</label>
+                    <input type="text" id="url" placeholder="লিংকটি এখানে পেস্ট করুন" class="w-full p-3 rounded-xl bg-gray-50 border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-600 text-gray-900">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">থাম্বনেইল লিংক (.jpg বা .png)</label>
+                    <input type="text" id="thumbnail" placeholder="https://i.postimg.cc/..." class="w-full p-3 rounded-xl bg-gray-50 border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-600 text-gray-900">
+                </div>
+
+                <button onclick="uploadVideo()" class="w-full bg-indigo-600 py-3 rounded-xl font-bold text-white text-lg hover:bg-indigo-700 transition active:scale-95 shadow-lg shadow-indigo-500/20">ভিডিও আপলোড করুন</button>
+                
+                <p id="success-msg" class="text-center text-green-600 font-bold text-sm hidden">🎉 ভিডিও সফলভাবে আপলোড হয়েছে!</p>
             </div>
         </div>
 
         <div class="bg-white p-6 md:p-8 rounded-3xl border border-gray-200 shadow-xl">
             <h3 class="text-xl font-extrabold text-gray-800 mb-4 border-b pb-2">মোট আপলোড করা ভিডিওর তালিকা</h3>
+            
             <div id="loading-text" class="text-center py-4 text-gray-500 font-medium">ভিডিওর তালিকা লোড হচ্ছে...</div>
+            
             <div id="admin-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
         </div>
 
@@ -75,17 +63,22 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // ১. ভিডিও আপলোড
+        // ১. ভিডিও আপলোড করার ফাংশন
         function uploadVideo() {
             const title = document.getElementById('title').value.trim();
             const url = document.getElementById('url').value.trim();
             const thumbnail = document.getElementById('thumbnail').value.trim();
             const successMsg = document.getElementById('success-msg');
 
-            if (!title || !url) { alert("টাইটেল এবং ভিডিও লিংক অবশ্যই দিন!"); return; }
+            if (!title || !url) {
+                alert("দয়া করে টাইটেল এবং ভিডিও লিংক অবশ্যই দিন!");
+                return;
+            }
 
+            // ফায়ারবেসের জন্য ইউনিক আইডি জেনারেট করা
             const videoId = Date.now().toString();
 
+            // ফায়ারবেস ডেটাবেজের 'videos' নোডের আন্ডারে ইউনিক আইডি দিয়ে পুশ করা হচ্ছে
             database.ref('videos/' + videoId).set({
                 id: videoId,
                 title: title,
@@ -93,35 +86,44 @@
                 thumbnail: thumbnail || 'https://via.placeholder.com/400x225'
             }).then(() => {
                 successMsg.classList.remove('hidden');
+                // ইনপুট বক্সগুলো খালি করে দেওয়া
                 document.getElementById('title').value = '';
                 document.getElementById('url').value = '';
                 document.getElementById('thumbnail').value = '';
+                
                 setTimeout(() => { successMsg.classList.add('hidden'); }, 3000);
+            }).catch((error) => {
+                alert("আপলোড করতে সমস্যা হয়েছে: " + error.message);
             });
         }
 
-        // ২. রিয়েলটাইম ডেটাবেজ থেকে তালিকা শো করা
+        // ২. ফায়ারবেস থেকে রিয়েলটাইম ডেটা নিয়ে এসে তালিকা দেখানোর ফাংশন
         database.ref('videos').on('value', (snapshot) => {
             const grid = document.getElementById('admin-grid');
             const loadingText = document.getElementById('loading-text');
-            grid.innerHTML = ""; 
+            grid.innerHTML = ""; // আগের লিস্ট ক্লিয়ার করা
+            
             const data = snapshot.val();
             
             if (data) {
                 loadingText.classList.add('hidden');
+                
+                // ডেটা অবজেক্টকে লুপ চালিয়ে ইন্টারফেসে দেখানো
                 Object.keys(data).forEach((key) => {
                     const video = data[key];
+                    
                     const card = `
                         <div class="bg-gray-50 p-3 rounded-2xl border border-gray-200 flex flex-col justify-between shadow-sm">
                             <div>
                                 <img src="${video.thumbnail}" class="w-full aspect-video object-cover rounded-xl mb-2">
                                 <h4 class="text-sm font-bold text-gray-800 line-clamp-2 leading-5 mb-3">${video.title}</h4>
                             </div>
-                            <button onclick="deleteVideo('${key}')" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-xl text-xs transition shadow-md">
+                            <button onclick="deleteVideo('${key}')" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-xl text-xs transition active:scale-95 shadow-md">
                                 ডিলিট করুন 🗑️
                             </button>
                         </div>
                     `;
+                    // নতুন ভিডিও সবার উপরে দেখানোর জন্য জইন করা
                     grid.insertAdjacentHTML('afterbegin', card);
                 });
             } else {
@@ -130,36 +132,17 @@
             }
         });
 
-        // ৩. ভিডিও ডিলিট করা
+        // ৩. ফায়ারবেস থেকে ভিডিও ডিলিট করার ফাংশন
         function deleteVideo(key) {
-            if (confirm("ভিডিওটি ডিলিট করতে চান?")) {
-                database.ref('videos/' + key).remove();
+            if (confirm("আপনি কি নিশ্চিত যে এই ভিডিওটি ডিলিট করতে চান?")) {
+                database.ref('videos/' + key).remove()
+                .then(() => {
+                    alert("ভিডিওটি সফলভাবে ডিলিট করা হয়েছে!");
+                })
+                .catch((error) => {
+                    alert("ডিলিট করা যায়নি: " + error.message);
+                });
             }
-        }
-
-        // ৪. ডেটাবেজের মাধ্যমে ব্রডকাস্ট নোটিফিকেশন পাঠানোর ট্রিক
-        function sendNotification() {
-            const notifTitle = document.getElementById('notif-title').value.trim();
-            const notifBody = document.getElementById('notif-body').value.trim();
-
-            if (!notifTitle || !notifBody) {
-                alert("নোটিফিকেশনের টাইটেল এবং মেসেজ দুটিই লিখুন!");
-                return;
-            }
-
-            // আমরা ডেটাবেজে একটি নতুন নোটিফিকেশন রিকোয়েস্ট তৈরি করছি
-            const notificationId = Date.now().toString();
-            database.ref('notifications/' + notificationId).set({
-                title: notifTitle,
-                body: notifBody,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                alert("🚀 নোটিফিকেশন সফলভাবে ব্রডকাস্টের জন্য পাঠানো হয়েছে!");
-                document.getElementById('notif-title').value = "";
-                document.getElementById('notif-body').value = "";
-            }).catch((err) => {
-                alert("সমস্যা হয়েছে: " + err.message);
-            });
         }
     </script>
 </body>

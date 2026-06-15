@@ -8,6 +8,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
     <style>
         body { background-color: #050505; color: white; font-family: sans-serif; overflow-x: hidden; }
@@ -101,10 +102,11 @@
     </div>
 
     <script>
-        // --- ফায়ারবেস কনফিগ (আপনার অরিজিনাল ডাটা) ---
+        // --- ফায়ারবেস কনফিগ ---
         const firebaseConfig = {
           apiKey: "AIzaSyBiVxBxExXHd2OqWa5LqZNE5a2t-6j1n9Y",
           authDomain: "sapp-38df8.firebaseapp.com",
+          databaseURL: "https://sapp-38df8-default-rtdb.firebaseio.com", // ডাটাবেজ URL অ্যাড করা হলো
           projectId: "sapp-38df8",
           storageBucket: "sapp-38df8.firebasestorage.app",
           messagingSenderId: "335406842966",
@@ -112,10 +114,10 @@
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const database = firebase.database(); // ডেটাবেজ ভেরিয়েবল ইনিশিয়ালাইজ করা হলো
 
         let isLoginMode = true;
         let allVideos = [];
-        const DB_URL = `https://raw.githubusercontent.com/siyambi475-cloud/sapp/main/database.json?t=${new Date().getTime()}`;
 
         // ফায়ারবেস লগিন ও সাইন-আপ হ্যান্ডলার
         function toggleAuth() {
@@ -160,7 +162,7 @@
 
         function logout() { auth.signOut(); }
 
-        // Pull to Refresh Logic (আপনার অরিজিনাল কোড থেকে)
+        // Pull to Refresh Logic
         let startY = 0;
         const ptrElement = document.getElementById('ptr-element');
         const loaderCircle = document.getElementById('loader-circle');
@@ -194,12 +196,20 @@
             }
         });
 
-        // ভিডিও ডাটাবেস লোড ফাংশন
+        // সরাসরি ফায়ারবেস Realtime Database থেকে লাইভ ভিডিও ডেটা লোড করার নতুন ফাংশন
         async function loadVideos() {
             try {
-                const res = await fetch(DB_URL);
-                allVideos = await res.json();
-                display(allVideos);
+                // আপনার ফায়ারবেসের 'videos' নোড থেকে ডেটা আনা হচ্ছে
+                database.ref('videos').once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        // যদি ডেটা অবজেক্ট আকারে থাকে তাকে অ্যারেতে রূপান্তর করা হচ্ছে
+                        allVideos = Object.values(data);
+                        display(allVideos);
+                    } else {
+                        document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10">কোনো ভিডিও নেই!</p>';
+                    }
+                });
             } catch (err) {
                 document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10">লোড হচ্ছে না...</p>';
             }
@@ -221,12 +231,27 @@
             display(allVideos.filter(v => v.title.toLowerCase().includes(q)));
         }
 
+        // ইউটিউব ভিডিও আইডি এক্সট্রাক্ট এবং এম্বেড করার ফাংশন
         function playVideo(url) {
             const frame = document.getElementById('videoFrame');
-            let id = url.includes("youtu.be/") ? url.split("youtu.be/")[1].split("?")[0] : url.split("v=")[1]?.split("&")[0];
-            frame.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
-            document.getElementById('player').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
+            let videoId = "";
+            
+            // বিভিন্ন প্রকার ইউটিউব লিংক প্রসেস করার জন্য লজিক
+            if (url.includes("youtu.be/")) {
+                videoId = url.split("youtu.be/")[1].split("?")[0];
+            } else if (url.includes("v=")) {
+                videoId = url.split("v=")[1].split("&")[0];
+            } else if (url.includes("embed/")) {
+                videoId = url.split("embed/")[1].split("?")[0];
+            }
+
+            if (videoId) {
+                frame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                document.getElementById('player').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                alert("ইউটিউব ভিডিওর লিংকটি সঠিক নয়!");
+            }
         }
 
         function closePlayer() {

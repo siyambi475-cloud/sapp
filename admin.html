@@ -141,7 +141,7 @@
             }
         }
 
-        // ৪. ওয়ানসিগন্যাল API এর মাধ্যমে সরাসরি নোটিফিকেশন পাঠান (CORS Bypass সহ)
+        // ৪. ওয়ানসিগন্যাল API এর মাধ্যমে সরাসরি নোটিফিকেশন পাঠান (নতুন অল্টারনেটিভ প্রক্সি)
         async function sendNotification() {
             const notifTitle = document.getElementById('notif-title').value.trim();
             const notifBody = document.getElementById('notif-body').value.trim();
@@ -158,8 +158,8 @@
                 contents: { "en": notifBody }
             };
 
-            // CORS Error এড়াতে অল্টারনেটিভ অল-ইন-ওয়ান ওপেন প্রক্সি ব্যবহার করা হয়েছে
-            const proxyUrl = "https://corsproxy.io/?";
+            // অল-ইন-ওয়ান ওপেন প্রক্সি যা হেডার পাস করতে দেয়
+            const proxyUrl = "https://api.allorigins.win/raw?url=";
             const targetUrl = "https://onesignal.com/api/v1/notifications";
 
             try {
@@ -167,19 +167,23 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Basic ${ONESIGNAL_REST_KEY}`
+                        "Authorization": "Basic " + ONESIGNAL_REST_KEY
                     },
                     body: JSON.stringify(notificationData)
                 });
-
-                const result = await response.json();
 
                 if (response.ok) {
                     alert("🚀 ওয়ানসিগন্যাল নোটিফিকেশন সফলভাবে পাঠানো হয়েছে!");
                     document.getElementById('notif-title').value = "";
                     document.getElementById('notif-body').value = "";
                 } else {
-                    alert("ত্রুটি: " + (result.errors ? result.errors[0] : "পাঠানো যায়নি"));
+                    const resultText = await response.text();
+                    let errMsg = "পাঠানো যায়নি";
+                    try {
+                        const result = JSON.parse(resultText);
+                        if (result.errors) errMsg = result.errors[0];
+                    } catch(e) {}
+                    alert("ত্রুটি: " + errMsg);
                 }
             } catch (err) {
                 alert("নেটওয়ার্ক সমস্যা: " + err.message);

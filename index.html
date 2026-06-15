@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title> সবার আগে সিরিয়াল দেখুন Premium</title>
+    <title>সবার আগে সিরিয়াল দেখুন Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -89,10 +89,34 @@
         </div>
     </div>
 
-    <div id="player" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[600] p-2">
+    <div id="player" class="hidden fixed inset-0 bg-black/95 flex flex-col items-center justify-center z-[600] p-4">
         <div class="w-full max-w-4xl text-right">
-            <button onclick="closePlayer()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold mb-2 shadow-lg active:scale-95 transition">বন্ধ করুন ✖</button>
-            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-2xl" id="playerContainer"></div>
+            <button onclick="closePlayer()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold mb-3 shadow-lg active:scale-95 transition">বন্ধ করুন ✖</button>
+            
+            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-2xl mb-4" id="playerContainer"></div>
+            
+            <div class="text-left bg-gray-900/80 p-4 rounded-2xl border border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex-1">
+                    <h2 id="playerVideoTitle" class="text-sm md:text-base font-bold text-gray-100 line-clamp-2 leading-6">ভিডিওর নাম</h2>
+                    <p id="playerVideoViews" class="text-xs text-gray-500 mt-1">👁️ ০ ভিউজ</p>
+                </div>
+                
+                <div class="flex items-center gap-2 justify-start md:justify-end">
+                    <div class="bg-black border border-gray-800 rounded-xl flex items-center p-1">
+                        <button id="likeBtn" class="flex items-center gap-1 hover:bg-gray-800 px-3 py-2 rounded-lg text-xs font-semibold text-gray-300 transition">
+                            <span>👍</span> <span id="likeText">০</span>
+                        </button>
+                        <div class="w-[1px] h-5 bg-gray-800 mx-1"></div>
+                        <button id="dislikeBtn" class="flex items-center gap-1 hover:bg-gray-800 px-3 py-2 rounded-lg text-xs font-semibold text-gray-300 transition">
+                            <span>👎</span> <span id="dislikeText">০</span>
+                        </button>
+                    </div>
+                    
+                    <button id="playerDownloadBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                        📥 ডাউনলোড
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -113,6 +137,7 @@
 
         let isLoginMode = true;
         let allVideos = [];
+        let currentPlayingVideoId = null;
 
         function toggleAuth() {
             isLoginMode = !isLoginMode;
@@ -146,7 +171,7 @@
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
-                loadVideos();
+                listenVideos(); 
             } else {
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('app-content').classList.add('hidden');
@@ -179,7 +204,15 @@
             if (window.scrollY === 0 && diff > 70) {
                 ptrText.innerText = "";
                 loaderCircle.classList.add('spinning');
-                await loadVideos();
+                
+                database.ref('videos').once('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if(data) {
+                        allVideos = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                        display(allVideos);
+                    }
+                });
+
                 setTimeout(() => {
                     ptrElement.style.transform = `translateY(0)`;
                     loaderCircle.classList.remove('spinning');
@@ -189,34 +222,61 @@
             }
         });
 
-        // ফায়ারবেস থেকে ভিডিও লোড করা
-        async function loadVideos() {
-            try {
-                database.ref('videos').once('value', (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        allVideos = Object.values(data);
-                        display(allVideos);
-                    } else {
-                        document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10">কোনো ভিডিও নেই!</p>';
+        // লাইভ ডেটাবেজ লিসেনার
+        function listenVideos() {
+            database.ref('videos').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    allVideos = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                    display(allVideos);
+                    
+                    if(currentPlayingVideoId && data[currentPlayingVideoId]) {
+                        updatePlayerStats(currentPlayingVideoId, data[currentPlayingVideoId]);
                     }
-                });
-            } catch (err) {
+                } else {
+                    document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10">কোনো ভিডিও নেই!</p>';
+                }
+            }, (err) => {
                 document.getElementById('grid').innerHTML = '<p class="text-center col-span-full py-10">লোড হচ্ছে না...</p>';
-            }
+            });
         }
 
-        // গ্রিড ডিসপ্লে (সব ধরণের ভিডিওর জন্যই ডাউনলোড বাটন থাকবে)
+        // রেন্ডম বেস ভ্যালু মেকার (আইডির ওপর ভিত্তি করে ফিক্সড ভ্যালু জেনারেট করে)
+        function getBaseStats(id) {
+            if (!id) return { views: 300, likes: 50, dislikes: 0 };
+            let hash = 0;
+            for (let i = 0; i < id.length; i++) {
+                hash = id.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const absHash = Math.abs(hash);
+            return {
+                views: 300 + (absHash % 701),      // ৩০০ থেকে ১০০০
+                likes: 50 + (absHash % 201),       // ৫০ থেকে ২৫০
+                dislikes: absHash % 6              // ০ থেকে ৫
+            };
+        }
+
+        // হোমপেজ গ্রিড রেন্ডার (ডিসলাইক কাউন্টার সহ আপডেট করা হয়েছে)
         function display(data) {
             const grid = document.getElementById('grid');
             grid.innerHTML = data.length === 0 ? '<p class="text-center col-span-full py-10">কোনো ভিডিও নেই!</p>' : 
             data.map(v => {
+                const base = getBaseStats(v.id);
+                const totalViews = base.views + (v.views || 0);
+                const totalLikes = base.likes + (v.likes || 0);
+                const totalDislikes = base.dislikes + (v.dislikes || 0); // ডিসলাইক কাউন্টার ভেরিয়েবল
+
                 return `
                     <div class="video-card bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-lg flex flex-col justify-between">
-                        <div onclick="playVideo('${v.url}')">
+                        <div onclick="playVideo('${v.url}', '${v.id}', '${v.title.replace(/'/g, "\\'")}')">
                             <img src="${v.thumbnail || 'https://via.placeholder.com/400x225'}" class="w-full aspect-video object-cover">
                             <div class="p-3">
                                 <h3 class="text-xs font-bold line-clamp-2 h-10 leading-5 text-gray-200">${v.title}</h3>
+                                
+                                <div class="flex items-center gap-3 text-[10px] text-gray-500 mt-2 font-medium">
+                                    <span class="flex items-center gap-0.5">👁️ ${totalViews}</span>
+                                    <span class="flex items-center gap-0.5">👍 ${totalLikes}</span>
+                                    <span class="flex items-center gap-0.5">👎 ${totalDislikes}</span> </div>
                             </div>
                         </div>
                         <div class="px-3 pb-3">
@@ -229,65 +289,105 @@
             }).reverse().join('');
         }
 
-        // ইউনিভার্সাল ডাউনলোড ইঞ্জিন ফাংশন (ইউটিউব, ফেসবুক, ড্রাইভ বা যেকোনো লিংকের জন্য প্রযোজ্য)
-        function downloadUniversal(url, title) {
-            let cleanUrl = url;
+        // প্লেয়ার মডালের লাইক/ডিসলাইক সংখ্যা লাইভ আপডেট করার লজিক
+        function updatePlayerStats(id, videoData) {
+            const base = getBaseStats(id);
+            document.getElementById('playerVideoViews').innerText = `👁️ ${base.views + (videoData.views || 0)} ভিউজ`;
+            document.getElementById('likeText').innerText = base.likes + (videoData.likes || 0);
+            document.getElementById('dislikeText').innerText = base.dislikes + (videoData.dislikes || 0);
+        }
 
-            // যদি এটি প্রক্সিযুক্ত ইউটিউব লিংক হয়, তবে মেইন ইউটিউব ফরম্যাটে কনভার্ট করা হচ্ছে
-            if (url.includes("http://googleusercontent.com/youtube.com/")) {
-                let videoId = "";
-                if (url.includes("v=")) {
-                    videoId = url.split("v=")[1].split("&")[0];
-                } else if (url.includes("youtu.be/")) {
-                    videoId = url.split("youtu.be/")[1].split("?")[0];
-                } else if (url.includes("embed/")) {
-                    videoId = url.split("embed/")[1].split("?")[0];
-                } else if (url.includes("shorts/")) {
-                    videoId = url.split("shorts/")[1].split("?")[0].split("&")[0];
-                }
-                if (videoId) {
-                    cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        // গুগল ড্রাইভ আইডি হেল্পার
+        function getDriveId(url) {
+            const regExp = /(?:https?:\/\/)?(?:drive\.google\.com\/(?:file\/d\/|open\?id=)|docs\.google\.com\/(?:file\/d\/))([a-zA-Z0-9_-]{25,})/;
+            const match = url.match(regExp);
+            return (match && match[1]) ? match[1] : null;
+        }
+
+        // রামবল লিংক আইডি এক্সট্র্যাক্টর ও এম্বেড কনভার্টার
+        function convertRumbleUrl(url) {
+            if (url.includes("rumble.com") && !url.includes("/embed/")) {
+                const match = url.match(/rumble\.com\/([a-zA-Z0-9]+)-/);
+                if (match && match[1]) {
+                    return `https://rumble.com/embed/${match[1]}/`;
                 }
             }
+            return url;
+        }
 
-            // যদি সরাসরি ডিরেক্ট ভিডিও ফাইল (.mp4) হয়
-            if (cleanUrl.includes(".mp4") && !cleanUrl.includes("youtube.com") && !cleanUrl.includes("facebook.com")) {
-                alert("আপনার ডিরেক্ট ভিডিও ফাইলটি ডাউনলোড হওয়া শুরু হয়েছে...");
+        // ইউনিভার্সাল ডাউনলোড সিস্টেম
+        function downloadUniversal(url, title) {
+            const driveId = getDriveId(url);
+
+            if (driveId) {
+                alert("গুগল ড্রাইভ থেকে সরাসরি ডাউনলোড হচ্ছে...");
+                window.open(`https://docs.google.com/uc?export=download&id=${driveId}`, '_blank');
+                return;
+            }
+
+            if (url.includes(".mp4") && !url.includes("youtube.com") && !url.includes("facebook.com")) {
+                alert("ভিডিও ফাইলটি ডাউনলোড হওয়া শুরু হয়েছে...");
                 const a = document.createElement('a');
-                a.href = cleanUrl;
+                a.href = url;
                 a.download = title ? `${title}.mp4` : 'video.mp4';
                 a.target = '_blank';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-            } else {
-                // ইউটিউব, ফেসবুক বা যেকোনো সোশ্যাল মিডিয়া লিংকের জন্য সেভফ্রম ইউনিভার্সাল গেটওয়ে ওপেন হবে
-                alert("ডাউনলোড পেজটি ওপেন হচ্ছে। সেখানে এক ক্লিকে ডাউনলোড ফরম্যাট সিলেক্ট করুন।");
-                const downloaderGateway = `https://savefrom.net/?url=${encodeURIComponent(cleanUrl)}`;
-                window.open(downloaderGateway, '_blank');
+                return;
             }
+
+            alert("ডাউনলোড পেজটি ওপেন হচ্ছে। সেখান থেকে এক ক্লিকে সেভ করুন।");
+            let cleanUrl = url;
+
+            if (url.includes("rumble.com")) {
+                cleanUrl = convertRumbleUrl(url);
+            } 
+            else if (url.includes("youtube.com") && url.includes("v=")) {
+                const videoId = url.split("v=")[1].split("&")[0];
+                cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            }
+
+            const downloaderGateway = `https://savefrom.net/?url=${encodeURIComponent(cleanUrl)}`;
+            window.open(downloaderGateway, '_blank');
         }
 
-        function search() {
-            const q = document.getElementById('searchBox').value.toLowerCase();
-            display(allVideos.filter(v => v.title.toLowerCase().includes(q)));
-        }
+        // প্লেয়ার ইঞ্জিন
+        function playVideo(url, id, title) {
+            currentPlayingVideoId = id;
 
-        // প্লেয়ার ফাংশন
-        function playVideo(url) {
+            document.getElementById('playerVideoTitle').innerText = title;
+            document.getElementById('playerDownloadBtn').onclick = () => downloadUniversal(url, title);
+            
+            document.getElementById('likeBtn').onclick = () => handleLikeDislike(id, 'likes');
+            document.getElementById('dislikeBtn').onclick = () => handleLikeDislike(id, 'dislikes');
+
+            if(id && id !== 'undefined') {
+                database.ref('videos/' + id + '/views').transaction((currentViews) => {
+                    return (currentViews || 0) + 1;
+                });
+            }
+
             const container = document.getElementById('playerContainer');
             container.innerHTML = ""; 
             
             let finalUrl = url;
             let useIframe = false;
+            const driveId = getDriveId(url);
 
-            if (url.includes("youtube.com") || url.includes("youtu.be")) {
+            if (driveId) {
+                useIframe = true;
+                finalUrl = `https://drive.google.com/file/d/${driveId}/preview`;
+            }
+            else if (url.includes("rumble.com")) {
+                useIframe = true;
+                finalUrl = convertRumbleUrl(url);
+            }
+            else if (url.includes("youtube.com") || url.includes("shorts/")) {
                 useIframe = true;
                 let videoId = "";
                 if (url.includes("v=")) {
                     videoId = url.split("v=")[1].split("&")[0];
-                } else if (url.includes("youtu.be/")) {
-                    videoId = url.split("youtu.be/")[1].split("?")[0];
                 } else if (url.includes("embed/")) {
                     videoId = url.split("embed/")[1].split("?")[0];
                 } else if (url.includes("shorts/")) {
@@ -299,12 +399,9 @@
                 useIframe = true;
                 finalUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1`;
             }
-            else if (url.includes("embed") || url.includes(".html")) {
-                useIframe = true;
-            }
 
             if (useIframe) {
-                container.innerHTML = `<iframe src="${finalUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+                container.innerHTML = `<iframe src="${finalUrl}" frameborder="0" allow="autoplay; encrypted-media; allowfullscreen" allowfullscreen></iframe>`;
             } else {
                 container.innerHTML = `
                     <video controls autoplay playsinline class="w-full h-full object-contain">
@@ -318,10 +415,25 @@
             document.body.style.overflow = 'hidden';
         }
 
+        // ফায়ারবেসে লাইক বা ডিসলাইক বৃদ্ধির ট্রানজেকশন লজিক
+        function handleLikeDislike(id, type) {
+            if(id) {
+                database.ref('videos/' + id + '/' + type).transaction((currentValue) => {
+                    return (currentValue || 0) + 1;
+                });
+            }
+        }
+
         function closePlayer() {
+            currentPlayingVideoId = null;
             document.getElementById('playerContainer').innerHTML = ""; 
             document.getElementById('player').classList.add('hidden');
             document.body.style.overflow = 'auto';
+        }
+
+        function search() {
+            const q = document.getElementById('searchBox').value.toLowerCase();
+            display(allVideos.filter(v => v.title.toLowerCase().includes(q)));
         }
     </script>
 </body>

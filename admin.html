@@ -77,8 +77,6 @@
 
         // --- ওয়ানসিগন্যাল কনফিগারেশন ---
         const ONESIGNAL_APP_ID = "fe7cc546-1862-48be-8a0a-3ac808bec2e5";
-        
-        // ⚠️ আপনার OneSignal ড্যাশবোর্ড (Settings -> API Keys) থেকে "REST API Key" টি নিয়ে নিচের লাইনে বসান।
         const ONESIGNAL_REST_KEY = "YzgzZmY2N2EtNDg5My00YjVjLThjMmEtODZlZGM5NzA1MGVm"; 
 
         // ১. ভিডিও আপলোড
@@ -153,19 +151,12 @@
                 return;
             }
 
-            if (ONESIGNAL_REST_KEY === "YOUR_ONESIGNAL_REST_API_KEY_HERE") {
-                alert("দয়া করে কোডের ভেতর ওয়ানসিগন্যালের REST API Key টি বসান। তা না হলে নোটিফিকেশন যাবে না।");
-                return;
-            }
-
             // নোটিফিকেশন ডেটা অবজেক্ট তৈরি
             const notificationData = {
                 app_id: ONESIGNAL_APP_ID,
-                included_segments: ["All Subscribers"], // সমস্ত ইউজারের কাছে যাবে
+                included_segments: ["All Subscribers"], 
                 headings: { "en": notifTitle },
-                contents: { "en": notifBody },
-                // আপনি চাইলে এখানে আপনার মেইন সাইটের লিংক দিতে পারেন, যাতে ক্লিক করলে সাইট খোলে
-                url: "https://your-github-username.github.io/repository-name/" 
+                contents: { "en": notifBody }
             };
 
             try {

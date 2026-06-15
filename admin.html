@@ -36,7 +36,7 @@
 
             <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-xl flex flex-col justify-between">
                 <div>
-                    <h2 class="text-xl font-extrabold text-red-600 text-center mb-4 uppercase tracking-wider">📢 SEND PUSH NOTIFICATION (ONESIGNAL)</h2>
+                    <h2 class="text-xl font-extrabold text-red-600 text-center mb-4 uppercase tracking-wider">📢 SEND PUSH NOTIFICATION</h2>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-700 mb-1">নোটিফিকেশন টাইটেল</label>
@@ -137,7 +137,7 @@
             }
         }
 
-        // ৪. ফায়ারবেসের মাধ্যমে নোটিফিকেশন ট্রিগার পাঠানো
+        // ৪. ডেটাবেজের মাধ্যমে ব্রডকাস্ট নোটিফিকেশন পাঠানোর ট্রিক
         function sendNotification() {
             const notifTitle = document.getElementById('notif-title').value.trim();
             const notifBody = document.getElementById('notif-body').value.trim();
@@ -147,17 +147,18 @@
                 return;
             }
 
-            // ফায়ারবেসে নোটিফিকেশন ডেটা পুশ করা হচ্ছে
-            database.ref('notification_trigger').set({
+            // আমরা ডেটাবেজে একটি নতুন নোটিফিকেশন রিকোয়েস্ট তৈরি করছি
+            const notificationId = Date.now().toString();
+            database.ref('notifications/' + notificationId).set({
                 title: notifTitle,
                 body: notifBody,
-                timestamp: Date.now()
+                timestamp: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                alert("🚀 নোটিফিকেশন রিকোয়েস্ট পাঠানো হয়েছে! ইউজাররা অ্যাপে ঢুকলেই ওয়ানসিগন্যাল এটি পুশ করে দেবে।");
+                alert("🚀 নোটিফিকেশন সফলভাবে ব্রডকাস্টের জন্য পাঠানো হয়েছে!");
                 document.getElementById('notif-title').value = "";
                 document.getElementById('notif-body').value = "";
             }).catch((err) => {
-                alert("ফায়ারবেস এরর: " + err.message);
+                alert("সমস্যা হয়েছে: " + err.message);
             });
         }
     </script>

@@ -6,10 +6,19 @@
     <title> সবার আগে সিরিয়াল দেখুন Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "fe7cc546-1862-48be-8a0a-3ac808bec2e5",
+        });
+      });
+    </script>
+
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     
     <style>
         body { background-color: #050505; color: white; font-family: sans-serif; overflow-x: hidden; }
@@ -45,7 +54,7 @@
             <div class="space-y-4">
                 <input type="email" id="email" placeholder="ইমেইল দিন" class="w-full p-4 rounded-xl bg-black border border-gray-800 outline-none focus:ring-2 focus:ring-indigo-600 text-white">
                 <input type="password" id="password" placeholder="পাসওয়ার্ড দিন" class="w-full p-4 rounded-xl bg-black border border-gray-800 outline-none focus:ring-2 focus:ring-indigo-600 text-white">
-                <button onclick="handleAuth()" id="auth-btn" class="w-full bg-indigo-600 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition active:scale-95 shadow-lg shadow-indigo-500/20">প্রবেশ করুন</button>
+                <button onclick="handleAuth()" id="auth-btn" class="w-full bg-indigo-600 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition active:scale-95 shadow-lg shadow-indigo-500/20">প্রवेश করুন</button>
                 <p class="text-center text-sm text-gray-400">
                     <span id="auth-toggle-text">অ্যাকাউন্ট নেই?</span> 
                     <button onclick="toggleAuth()" id="auth-toggle-btn" class="text-indigo-500 font-bold ml-1">সাইন-আপ করুন</button>
@@ -101,7 +110,7 @@
     </div>
 
     <script>
-        // --- ফায়ারবেস কনফিগ ---
+        // --- ফায়ারবেস কনфিগ ---
         const firebaseConfig = {
           apiKey: "AIzaSyBiVxBxExXHd2OqWa5LqZNE5a2t-6j1n9Y",
           authDomain: "sapp-38df8.firebaseapp.com",
@@ -114,7 +123,6 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const database = firebase.database();
-        const messaging = firebase.messaging(); // মেসেজিং ইনিশিয়ালাইজেশন
 
         let isLoginMode = true;
         let allVideos = [];
@@ -152,7 +160,6 @@
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
                 loadVideos();
-                setupNotifications(); // লগিন সফল হলে নোটিফিকেশন সেটআপ রান হবে
             } else {
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('app-content').classList.add('hidden');
@@ -160,39 +167,6 @@
         });
 
         function logout() { auth.signOut(); }
-
-        // --- পুশ নোটিফিকেশন টোকেন জেনারেট এবং ডাটাবেজে সেভ করার লজিক ---
-        function setupNotifications() {
-            // ব্রাউজারে সার্ভিস ওয়ার্কার রেজিস্টার করা
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('firebase-messaging-sw.js')
-                .then((registration) => {
-                    messaging.useServiceWorker(registration);
-                    
-                    // আপনার দেওয়া Web Push VAPID Key এখানে যুক্ত করা হলো
-                    return messaging.getToken({ 
-                        vapidKey: 'BFzSvw-Bf8fa1CpgJMYDyG-RU5v-ALn04xH7SxnTMW6TCmaRT6C1VoeCqc9C6-N7NMjJDoEkrW7u2uMSHk00cvY' 
-                    });
-                })
-                .then((currentToken) => {
-                    if (currentToken) {
-                        console.log('টোকেন পাওয়া গেছে:', currentToken);
-                        // ইউজারের ইউনিক নোটিফিকেশন টোকেন ফায়ারবেস রিয়েলটাইম ডেটাবেজে সেভ করা হচ্ছে
-                        database.ref('fcm_tokens/' + currentToken).set(true);
-                    } else {
-                        console.log('নোটিফিকেশন পারমিশন দেওয়া হয়নি।');
-                    }
-                })
-                .catch((err) => {
-                    console.log('নোটিফিকেশন সেটআপে ত্রুটি:', err);
-                });
-            }
-        }
-
-        // অ্যাপ ওপেন থাকা অবস্থায় নোটিফিকেশন আসলে (Foreground Message)
-        messaging.onMessage((payload) => {
-            alert(`🔔 নতুন নোটিফিকেশন:\n\n${payload.notification.title}\n${payload.notification.body}`);
-        });
 
         // Pull to Refresh
         let startY = 0;

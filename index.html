@@ -54,7 +54,7 @@
             <div class="space-y-4">
                 <input type="email" id="email" placeholder="ইমেইল দিন" class="w-full p-4 rounded-xl bg-black border border-gray-800 outline-none focus:ring-2 focus:ring-indigo-600 text-white">
                 <input type="password" id="password" placeholder="পাসওয়ার্ড দিন" class="w-full p-4 rounded-xl bg-black border border-gray-800 outline-none focus:ring-2 focus:ring-indigo-600 text-white">
-                <button onclick="handleAuth()" id="auth-btn" class="w-full bg-indigo-600 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition active:scale-95 shadow-lg shadow-indigo-500/20">প্রवेश করুন</button>
+                <button onclick="handleAuth()" id="auth-btn" class="w-full bg-indigo-600 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition active:scale-95 shadow-lg shadow-indigo-500/20">প্রবেশ করুন</button>
                 <p class="text-center text-sm text-gray-400">
                     <span id="auth-toggle-text">অ্যাকাউন্ট নেই?</span> 
                     <button onclick="toggleAuth()" id="auth-toggle-btn" class="text-indigo-500 font-bold ml-1">সাইন-আপ করুন</button>
@@ -110,7 +110,7 @@
     </div>
 
     <script>
-        // --- ফায়ারবেস কনфিগ ---
+        // --- ফায়ারবেস কনফিগ ---
         const firebaseConfig = {
           apiKey: "AIzaSyBiVxBxExXHd2OqWa5LqZNE5a2t-6j1n9Y",
           authDomain: "sapp-38df8.firebaseapp.com",
@@ -160,6 +160,7 @@
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('app-content').classList.remove('hidden');
                 loadVideos();
+                listenForNotifications(); // নোটিফিকেশন ট্র্যাকিং শুরু
             } else {
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('app-content').classList.add('hidden');
@@ -278,6 +279,29 @@
             document.getElementById('player').classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
+
+        // ফায়ারবেস থেকে নতুন নোটিফিকেশন চেক করে ব্রাউজার লেভেলে ওয়ানসিগন্যাল পুশ করার লজিক
+        function listenForNotifications() {
+            let lastNotifTime = localStorage.getItem('last_notif_time') || 0;
+            
+            database.ref('notification_trigger').on('value', (snapshot) => {
+                const notif = snapshot.val();
+                if (notif && notif.timestamp > lastNotifTime) {
+                    localStorage.setItem('last_notif_time', notif.timestamp);
+                    
+                    // ওয়ানসিগন্যাল ইন-অ্যাপ নোটিফিকেশন ট্রিগার করা
+                    window.OneSignalDeferred = window.OneSignalDeferred || [];
+                    OneSignalDeferred.push(function(OneSignal) {
+                        // ব্রাউজারে নোটিফিকেশন পারমিশন থাকলে মেইন মেসেজ অ্যালার্ট আকারেও ব্যাকআপ ট্রিগার করবে
+                        if(Notification.permission === "granted") {
+                            new Notification(notif.title, { body: notif.body });
+                        } else {
+                            alert(`📢 নোটিফিকেশন:\n\n${notif.title}\n${notif.body}`);
+                        }
+                    });
+                }
+            });
+        }
     </script>
 </body>
-</html>
+    </html>

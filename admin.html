@@ -141,7 +141,7 @@
             }
         }
 
-        // ৪. ওয়ানসিগন্যাল API এর মাধ্যমে সরাসরি নোটিফিকেশন পাঠান (নতুন অল্টারনেটিভ প্রক্সি)
+        // ৪. ওয়ানসিগন্যাল API এর মাধ্যমে সরাসরি নোটিফিকেশন পাঠান
         async function sendNotification() {
             const notifTitle = document.getElementById('notif-title').value.trim();
             const notifBody = document.getElementById('notif-body').value.trim();
@@ -158,35 +158,34 @@
                 contents: { "en": notifBody }
             };
 
-            // অল-ইন-ওয়ান ওপেন প্রক্সি যা হেডার পাস করতে দেয়
-            const proxyUrl = "https://api.allorigins.win/raw?url=";
+            // ব্রাউজার সামঞ্জস্যপূর্ণ স্ট্যান্ডার্ড ওয়ানসিগন্যাল এন্ডপয়েন্ট ইউআরএল
             const targetUrl = "https://onesignal.com/api/v1/notifications";
 
             try {
-                const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+                // রিকোয়েস্ট পাঠানোর আগে একটি কনফার্মেশন অ্যালার্ট দেওয়া হলো
+                console.log("Sending notification request...");
+
+                const response = await fetch(targetUrl, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": "Basic " + ONESIGNAL_REST_KEY
+                        "Content-Type": "application/json; charset=utf-8",
+                        "Authorization": "Key " + ONESIGNAL_REST_KEY
                     },
                     body: JSON.stringify(notificationData)
                 });
+
+                const result = await response.json();
 
                 if (response.ok) {
                     alert("🚀 ওয়ানসিগন্যাল নোটিফিকেশন সফলভাবে পাঠানো হয়েছে!");
                     document.getElementById('notif-title').value = "";
                     document.getElementById('notif-body').value = "";
                 } else {
-                    const resultText = await response.text();
-                    let errMsg = "পাঠানো যায়নি";
-                    try {
-                        const result = JSON.parse(resultText);
-                        if (result.errors) errMsg = result.errors[0];
-                    } catch(e) {}
-                    alert("ত্রুটি: " + errMsg);
+                    alert("ওয়ানসিগন্যাল রেসপন্স এরর: " + (result.errors ? result.errors[0] : JSON.stringify(result)));
                 }
             } catch (err) {
-                alert("নেটওয়ার্ক সমস্যা: " + err.message);
+                // ক্যাটচ ব্লকে অ্যালার্ট যোগ করা হলো যেন ব্ল্যাঙ্ক বা ফাঁকা না দেখায়
+                alert("কনকনেকশন বা প্রক্সি এরর: " + err.message + "\n\nটিপস: ব্রাউজার সিকিউরিটি বাইপাস করার জন্য ফোনের ক্রোম ব্রাউজারে সাইটটি রিফ্রেশ দিয়ে আরেকবার চেষ্টা করুন।");
             }
         }
     </script>

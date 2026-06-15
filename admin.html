@@ -75,10 +75,6 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // --- ওয়ানসিগন্যাল কনফিগারেশন ---
-        const ONESIGNAL_APP_ID = "fe7cc546-1862-48be-8a0a-3ac808bec2e5";
-        const ONESIGNAL_REST_KEY = "YzgzZmY2N2EtNDg5My00YjVjLThjMmEtODZlZGM5NzA1MGVm"; 
-
         // ১. ভিডিও আপলোড
         function uploadVideo() {
             const title = document.getElementById('title').value.trim();
@@ -141,8 +137,8 @@
             }
         }
 
-        // ৪. ওয়ানসিগন্যাল API এর মাধ্যমে সরাসরি নোটিফিকেশন পাঠান
-        async function sendNotification() {
+        // ৪. ফায়ারবেসের মাধ্যমে নোটিফিকেশন ট্রিগার পাঠানো
+        function sendNotification() {
             const notifTitle = document.getElementById('notif-title').value.trim();
             const notifBody = document.getElementById('notif-body').value.trim();
 
@@ -151,42 +147,18 @@
                 return;
             }
 
-            const notificationData = {
-                app_id: ONESIGNAL_APP_ID,
-                included_segments: ["All Subscribers"], 
-                headings: { "en": notifTitle },
-                contents: { "en": notifBody }
-            };
-
-            // ব্রাউজার সামঞ্জস্যপূর্ণ স্ট্যান্ডার্ড ওয়ানসিগন্যাল এন্ডপয়েন্ট ইউআরএল
-            const targetUrl = "https://onesignal.com/api/v1/notifications";
-
-            try {
-                // রিকোয়েস্ট পাঠানোর আগে একটি কনফার্মেশন অ্যালার্ট দেওয়া হলো
-                console.log("Sending notification request...");
-
-                const response = await fetch(targetUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json; charset=utf-8",
-                        "Authorization": "Key " + ONESIGNAL_REST_KEY
-                    },
-                    body: JSON.stringify(notificationData)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert("🚀 ওয়ানসিগন্যাল নোটিফিকেশন সফলভাবে পাঠানো হয়েছে!");
-                    document.getElementById('notif-title').value = "";
-                    document.getElementById('notif-body').value = "";
-                } else {
-                    alert("ওয়ানসিগন্যাল রেসপন্স এরর: " + (result.errors ? result.errors[0] : JSON.stringify(result)));
-                }
-            } catch (err) {
-                // ক্যাটচ ব্লকে অ্যালার্ট যোগ করা হলো যেন ব্ল্যাঙ্ক বা ফাঁকা না দেখায়
-                alert("কনকনেকশন বা প্রক্সি এরর: " + err.message + "\n\nটিপস: ব্রাউজার সিকিউরিটি বাইপাস করার জন্য ফোনের ক্রোম ব্রাউজারে সাইটটি রিফ্রেশ দিয়ে আরেকবার চেষ্টা করুন।");
-            }
+            // ফায়ারবেসে নোটিফিকেশন ডেটা পুশ করা হচ্ছে
+            database.ref('notification_trigger').set({
+                title: notifTitle,
+                body: notifBody,
+                timestamp: Date.now()
+            }).then(() => {
+                alert("🚀 নোটিফিকেশন রিকোয়েস্ট পাঠানো হয়েছে! ইউজাররা অ্যাপে ঢুকলেই ওয়ানসিগন্যাল এটি পুশ করে দেবে।");
+                document.getElementById('notif-title').value = "";
+                document.getElementById('notif-body').value = "";
+            }).catch((err) => {
+                alert("ফায়ারবেস এরর: " + err.message);
+            });
         }
     </script>
 </body>

@@ -13,7 +13,7 @@
     <style>
         body { background-color: #050505; color: white; font-family: sans-serif; overflow-x: hidden; }
         .video-card { transition: transform 0.2s; cursor: pointer; }
-        .video-card:active { transform: scale(0.95); }
+        .video-card:active { transform: scale(0.98); }
         iframe, video { border-radius: 12px; width: 100%; height: 100%; position: absolute; inset: 0; }
         .premium-btn {
             background: linear-gradient(90deg, #ffd700, #ff8c00);
@@ -206,15 +206,66 @@
             }
         }
 
+        // গ্রিড ডিসপ্লে (সব ধরণের ভিডিওর জন্যই ডাউনলোড বাটন থাকবে)
         function display(data) {
             const grid = document.getElementById('grid');
             grid.innerHTML = data.length === 0 ? '<p class="text-center col-span-full py-10">কোনো ভিডিও নেই!</p>' : 
-            data.map(v => `
-                <div onclick="playVideo('${v.url}')" class="video-card bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-lg">
-                    <img src="${v.thumbnail || 'https://via.placeholder.com/400x225'}" class="w-full aspect-video object-cover">
-                    <div class="p-4"><h3 class="text-xs font-bold line-clamp-2 h-10 leading-5 text-gray-200">${v.title}</h3></div>
-                </div>
-            `).reverse().join('');
+            data.map(v => {
+                return `
+                    <div class="video-card bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-lg flex flex-col justify-between">
+                        <div onclick="playVideo('${v.url}')">
+                            <img src="${v.thumbnail || 'https://via.placeholder.com/400x225'}" class="w-full aspect-video object-cover">
+                            <div class="p-3">
+                                <h3 class="text-xs font-bold line-clamp-2 h-10 leading-5 text-gray-200">${v.title}</h3>
+                            </div>
+                        </div>
+                        <div class="px-3 pb-3">
+                            <button onclick="downloadUniversal('${v.url}', '${v.title}')" class="w-full bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-400 hover:text-white py-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1">
+                                📥 ডাউনলোড করুন
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).reverse().join('');
+        }
+
+        // ইউনিভার্সাল ডাউনলোড ইঞ্জিন ফাংশন (ইউটিউব, ফেসবুক, ড্রাইভ বা যেকোনো লিংকের জন্য প্রযোজ্য)
+        function downloadUniversal(url, title) {
+            let cleanUrl = url;
+
+            // যদি এটি প্রক্সিযুক্ত ইউটিউব লিংক হয়, তবে মেইন ইউটিউব ফরম্যাটে কনভার্ট করা হচ্ছে
+            if (url.includes("http://googleusercontent.com/youtube.com/")) {
+                let videoId = "";
+                if (url.includes("v=")) {
+                    videoId = url.split("v=")[1].split("&")[0];
+                } else if (url.includes("youtu.be/")) {
+                    videoId = url.split("youtu.be/")[1].split("?")[0];
+                } else if (url.includes("embed/")) {
+                    videoId = url.split("embed/")[1].split("?")[0];
+                } else if (url.includes("shorts/")) {
+                    videoId = url.split("shorts/")[1].split("?")[0].split("&")[0];
+                }
+                if (videoId) {
+                    cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                }
+            }
+
+            // যদি সরাসরি ডিরেক্ট ভিডিও ফাইল (.mp4) হয়
+            if (cleanUrl.includes(".mp4") && !cleanUrl.includes("youtube.com") && !cleanUrl.includes("facebook.com")) {
+                alert("আপনার ডিরেক্ট ভিডিও ফাইলটি ডাউনলোড হওয়া শুরু হয়েছে...");
+                const a = document.createElement('a');
+                a.href = cleanUrl;
+                a.download = title ? `${title}.mp4` : 'video.mp4';
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                // ইউটিউব, ফেসবুক বা যেকোনো সোশ্যাল মিডিয়া লিংকের জন্য সেভফ্রম ইউনিভার্সাল গেটওয়ে ওপেন হবে
+                alert("ডাউনলোড পেজটি ওপেন হচ্ছে। সেখানে এক ক্লিকে ডাউনলোড ফরম্যাট সিলেক্ট করুন।");
+                const downloaderGateway = `https://savefrom.net/?url=${encodeURIComponent(cleanUrl)}`;
+                window.open(downloaderGateway, '_blank');
+            }
         }
 
         function search() {
@@ -222,7 +273,7 @@
             display(allVideos.filter(v => v.title.toLowerCase().includes(q)));
         }
 
-        // ১০০% ফিল্টারমুক্ত ইউনিভার্সাল প্লেয়ার (কোনো পপ-আপ বা ডিরেক্ট রিডাইরেক্ট নেই)
+        // প্লেয়ার ফাংশন
         function playVideo(url) {
             const container = document.getElementById('playerContainer');
             container.innerHTML = ""; 
@@ -230,7 +281,6 @@
             let finalUrl = url;
             let useIframe = false;
 
-            // ইউটিউব ভিডিও লজিক
             if (url.includes("youtube.com") || url.includes("youtu.be")) {
                 useIframe = true;
                 let videoId = "";
@@ -245,17 +295,14 @@
                 }
                 finalUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
             }
-            // ফেসবুক ভিডিও লজিক
             else if (url.includes("facebook.com") || url.includes("fb.watch")) {
                 useIframe = true;
                 finalUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1`;
             }
-            // থার্ডপার্টি এমবেড লিংক
             else if (url.includes("embed") || url.includes(".html")) {
                 useIframe = true;
             }
 
-            // প্লেয়ারে কন্টেন্ট সেট করা
             if (useIframe) {
                 container.innerHTML = `<iframe src="${finalUrl}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
             } else {

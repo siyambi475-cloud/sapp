@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siam Video Admin</title>
+    <title>Siam Video Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 </head>
 <body class="bg-gray-100 p-5">
     <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-2xl border border-gray-200">
-        <h2 class="text-2xl font-bold mb-6 text-indigo-700 text-center uppercase tracking-wider">Add New Video</h2>
+        <h2 class="text-2xl font-bold mb-6 text-indigo-700 text-center uppercase tracking-wider">Add New Video (Firebase)</h2>
         
         <div class="space-y-4">
             <div>
@@ -35,23 +37,32 @@
     </div>
 
     <script>
-        // আপনার দেওয়া টোকেনটি এখানে সেট করা হয়েছে
-        const TOKEN = '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'.trim();
-        const USER = 'siyambi475-cloud';
-        const REPO = 'sapp';
-        const FILE = 'database.json';
+        // আপনার index.html থেকে নেওয়া ফায়ারবেস ডেটা
+        const firebaseConfig = {
+          apiKey: "AIzaSyBiVxBxExXHd2OqWa5LqZNE5a2t-6j1n9Y",
+          authDomain: "sapp-38df8.firebaseapp.com",
+          projectId: "sapp-38df8",
+          storageBucket: "sapp-38df8.firebasestorage.app",
+          messagingSenderId: "335406842966",
+          appId: "1:335406842966:web:1cccf3395fb3e11460a7f7"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // ⚠️ আপনার ফায়ারবেস রিয়েলটাইম ডেটাবেজের লিংকটি নিচে বসাবেন (শেষে /videos.json অবশ্যই থাকবে)
+        const DATABASE_URL = 'https://sapp-38df8-default-rtdb.firebaseio.com/videos.json';
 
         // লিঙ্ক অটোমেটিক ঠিক করার ফাংশন
         function fixLink(url) {
-            if (url.includes("youtu.be/")) {
-                let id = url.split("youtu.be/")[1].split("?")[0];
+            if (url.includes("youtube.com/watch") || url.includes("youtu.be")) {
+                let id = "";
+                if(url.includes("v=")) {
+                    id = url.split("v=")[1].split("&")[0];
+                } else {
+                    id = url.split("/").pop().split("?")[0];
+                }
                 return `https://www.youtube.com/embed/${id}`;
             }
-            if (url.includes("youtube.com/watch")) {
-                let id = url.split("v=")[1].split("&")[0];
-                return `https://www.youtube.com/embed/${id}`;
-            }
-            if (url.includes("youtube.com/shorts")) {
+            if (url.includes("youtube.com/shorts/")) {
                 let id = url.split("shorts/")[1].split("?")[0];
                 return `https://www.youtube.com/embed/${id}`;
             }
@@ -79,49 +90,34 @@
 
             const finalUrl = fixLink(rawUrl);
 
+            const newVideo = { 
+                id: Date.now(), 
+                title: title, 
+                url: finalUrl, 
+                thumbnail: thumb 
+            };
+
             try {
-                // ১. বর্তমান ডাটাবেস ফাইলটি নামানো
-                const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`, {
-                    headers: { 'Authorization': `token ${TOKEN}` }
+                // সরাসরি ফায়ারবেস ডেটাবেজে পোস্ট করা হচ্ছে (কোনো গিটহাব টোকেন লাগবে না)
+                const res = await fetch(DATABASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newVideo)
                 });
                 
-                if(!res.ok) throw new Error("টোকেনটি কাজ করছে না! নতুন টোকেন দিন।");
+                if(!res.ok) throw new Error("ডেটাবেজে কানেক্ট করা যাচ্ছে না!");
                 
-                const data = await res.json();
-                const content = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+                msg.innerText = "🎉 ভিডিও সফলভাবে আপলোড হয়েছে!";
+                msg.className = "mt-4 text-center text-sm font-semibold text-green-600";
                 
-                // ২. নতুন ডাটা যোগ করা
-                content.push({ 
-                    id: Date.now(), 
-                    title: title, 
-                    url: finalUrl, 
-                    thumbnail: thumb 
-                });
+                // ইনপুট বক্স খালি করা
+                document.getElementById('title').value = "";
+                document.getElementById('vUrl').value = "";
+                document.getElementById('thumbUrl').value = "";
 
-                // ৩. গিটহাবে আপডেট পাঠানো
-                const update = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${TOKEN}` },
-                    body: JSON.stringify({
-                        message: `Added: ${title}`,
-                        content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
-                        sha: data.sha
-                    })
-                });
-
-                if(update.ok) {
-                    msg.className = "mt-4 text-center text-green-600 font-semibold";
-                    msg.innerText = "সাফল্যের সাথে ভিডিও অ্যাড হয়েছে!";
-                    document.getElementById('title').value = "";
-                    document.getElementById('vUrl').value = "";
-                    document.getElementById('thumbUrl').value = "";
-                } else {
-                    throw new Error("আপলোড ব্যর্থ হয়েছে।");
-                }
-
-            } catch (err) {
-                msg.className = "mt-4 text-center text-red-600 font-semibold";
-                msg.innerText = err.message;
+            } catch (error) {
+                msg.innerText = "ভুল হয়েছে: " + error.message;
+                msg.className = "mt-4 text-center text-sm font-semibold text-red-600";
             } finally {
                 btn.innerText = "ভিডিও আপলোড করুন";
                 btn.disabled = false;

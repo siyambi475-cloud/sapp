@@ -12,7 +12,7 @@
     
     <style>
         body { background-color: #050505; color: white; font-family: sans-serif; overflow-x: hidden; }
-        .video-card { transition: transform 0.2s; cursor: pointer; }
+        .video-card { transition: transform .2s; cursor: pointer; }
         .video-card:active { transform: scale(0.98); }
         iframe, video { border-radius: 12px; width: 100%; height: 100%; position: absolute; inset: 0; }
         .premium-btn {
@@ -65,9 +65,9 @@
                 <h1 class="text-3xl font-extrabold text-indigo-500 tracking-tighter">RIFAT <span class="text-white">STREAM</span></h1>
                 
                 <div class="flex items-center gap-3">
-                    <a href="https://www.facebook.com/profile.php?id=61556025009071" target="_blank" 
+                    <a href="https://t.me/RvLiv_bot?start=ref" target="_blank" 
                        class="premium-btn text-black px-4 py-2 rounded-full font-bold text-xs md:text-sm flex items-center gap-2">
-                        <span>💎</span> Get Premium
+                        <span>💎</span> Use Pc Or Ios
                     </a>
                     <button onclick="logout()" class="text-gray-400 text-[10px] border border-gray-800 px-2 py-1 rounded-md uppercase">Logout</button>
                 </div>
@@ -241,7 +241,7 @@
                 const base = getBaseStats(v.id);
                 return `
                     <div class="video-card bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-lg flex flex-col justify-between">
-                        <div onclick="playVideo('${v.url}', '${v.id}', '${v.title.replace(/'/g, "\\'")}')">
+                        <div onclick="handleVideoClick('${v.url}', '${v.id}', '${v.title.replace(/'/g, "\\'")}')">
                             <img src="${v.thumbnail || 'https://via.placeholder.com/400x225'}" class="w-full aspect-video object-cover">
                             <div class="p-3">
                                 <h3 class="text-xs font-bold line-clamp-2 h-10 leading-5 text-gray-200">${v.title}</h3>
@@ -262,6 +262,28 @@
             }).reverse().join('');
         }
 
+        function handleVideoClick(url, id, title) {
+            const adLink = "https://www.effectivecpmnetwork.com/rkjwyym2?key=095428e760f406124cdacbfec12795b3";
+            const hasClickedAd = sessionStorage.getItem('hasClickedAd');
+
+            if (!hasClickedAd) {
+                sessionStorage.setItem('pendingVideo', JSON.stringify({url, id, title}));
+                sessionStorage.setItem('hasClickedAd', 'true');
+                window.location.href = adLink; 
+            } else {
+                playVideo(url, id, title);
+            }
+        }
+
+        window.addEventListener('load', function() {
+            const pendingVideo = sessionStorage.getItem('pendingVideo');
+            if (pendingVideo) {
+                const video = JSON.parse(pendingVideo);
+                playVideo(video.url, video.id, video.title);
+                sessionStorage.removeItem('pendingVideo');
+            }
+        });
+
         function updatePlayerStats(id, videoData) {
             const base = getBaseStats(id);
             document.getElementById('playerVideoViews').innerText = `👁️ ${base.views + (videoData.views || 0)} ভিউজ`;
@@ -275,26 +297,31 @@
             return (match && match[1]) ? match[1] : null;
         }
 
-        function convertRumbleUrl(url) {
-            if (url.includes("rumble.com") && !url.includes("/embed/")) {
-                const match = url.match(/rumble\.com\/([a-zA-Z0-9]+)-/);
-                if (match && match[1]) return `https://rumble.com/embed/${match[1]}/`;
-            }
-            return url;
+        function getRumbleEmbedUrl(url) {
+            // রুম্বেল লিঙ্ক ফরম্যাট ঠিক করার লজিক
+            const match = url.match(/rumble\.com\/(?:embed\/|v[0-9]+-)?([a-zA-Z0-9]+)(?:-[a-zA-Z0-9]+)?\.html/);
+            if (match && match[1]) return `https://rumble.com/embed/${match[1]}/`;
+            return url.replace("rumble.com/", "rumble.com/embed/");
         }
         
-        // ইউটিউব আইডি বের করার ফাংশন
         function getYoutubeId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
             const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
+            return (match && match[1]) ? match[1] : null;
         }
 
         function downloadUniversal(url, title) {
             const driveId = getDriveId(url);
-            if (driveId) { window.open(`https://docs.google.com/uc?export=download&id=${driveId}`, '_blank'); return; }
-            if (url.includes("rumble.com")) window.open(convertRumbleUrl(url), '_blank');
-            else window.open(url, '_blank');
+            if (driveId) { 
+                window.open(`https://docs.google.com/uc?export=download&id=${driveId}`, '_blank'); 
+            } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
+                window.open(`https://en1.savefrom.net/1-youtube-video-downloader-19uO/?url=${encodeURIComponent(url)}`, '_blank');
+            } else if (url.includes("rumble.com")) {
+                // রুম্বেলের জন্য সেভফ্রম লিঙ্কে রিডাইরেক্ট
+                window.open(`https://en1.savefrom.net/1-youtube-video-downloader-19uO/?url=${encodeURIComponent(url)}`, '_blank');
+            } else {
+                window.open(url, '_blank');
+            }
         }
 
         function playVideo(url, id, title) {
@@ -313,7 +340,7 @@
             if (ytId) {
                 finalUrl = `https://www.youtube.com/embed/${ytId}?autoplay=1`;
             } else if (url.includes("rumble.com")) {
-                finalUrl = convertRumbleUrl(url);
+                finalUrl = getRumbleEmbedUrl(url);
             } else if (getDriveId(url)) {
                 finalUrl = `https://drive.google.com/file/d/${getDriveId(url)}/preview`;
             } else if (url.includes("facebook.com")) {

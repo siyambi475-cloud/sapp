@@ -138,6 +138,18 @@
         let allVideos = [];
         let currentPlayingVideoId = null;
 
+        // --- ব্যাক বাটন লজিক ---
+        window.history.pushState({ page: 'home' }, '');
+        window.addEventListener('popstate', function(event) {
+            const player = document.getElementById('player');
+            if (!player.classList.contains('hidden')) {
+                closePlayer();
+                window.history.pushState({ page: 'home' }, '');
+            } else {
+                window.history.pushState({ page: 'home' }, '');
+            }
+        });
+
         function toggleAuth() {
             isLoginMode = !isLoginMode;
             document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
@@ -262,19 +274,18 @@
             }).reverse().join('');
         }
 
-        // --- আপডেট করা ফাংশন (এডের জন্য) ---
+        // --- সংশোধিত অ্যাড এবং ভিডিও ক্লিক লজিক ---
         function handleVideoClick(url, id, title) {
             const adLink = "https://www.effectivecpmnetwork.com/rkjwyym2?key=095428e760f406124cdacbfec12795b3";
-            const lastAdTime = sessionStorage.getItem('lastAdTime');
-            const now = new Date().getTime();
-
-            // যদি ৬ ঘণ্টা (২১৬০০০০০ মিলি-সেকেন্ড) এর মধ্যে অ্যাড না দেখা হয়, তবেই অ্যাড দেখাবে
-            if (!lastAdTime || (now - lastAdTime) > 21600000) {
-                sessionStorage.setItem('lastAdTime', now);
-                window.open(adLink, '_blank');
-            }
             
+            // বিজ্ঞাপনটি নতুন ট্যাবে খুলবে
+            window.open(adLink, '_blank');
+            
+            // ভিডিও প্লেয়ার খুলবে
             playVideo(url, id, title);
+            
+            // হিস্ট্রি পুশ যাতে ব্যাক বাটন কাজ করে
+            window.history.pushState({ page: 'player' }, '');
         }
 
         function updatePlayerStats(id, videoData) {
@@ -360,4 +371,4 @@
         }
     </script>
 </body>
-</html>
+    </html>

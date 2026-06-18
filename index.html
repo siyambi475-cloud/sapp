@@ -262,27 +262,20 @@
             }).reverse().join('');
         }
 
+        // --- আপডেট করা ফাংশন (এডের জন্য) ---
         function handleVideoClick(url, id, title) {
             const adLink = "https://www.effectivecpmnetwork.com/rkjwyym2?key=095428e760f406124cdacbfec12795b3";
-            const hasClickedAd = sessionStorage.getItem('hasClickedAd');
+            const lastAdTime = sessionStorage.getItem('lastAdTime');
+            const now = new Date().getTime();
 
-            if (!hasClickedAd) {
-                sessionStorage.setItem('pendingVideo', JSON.stringify({url, id, title}));
-                sessionStorage.setItem('hasClickedAd', 'true');
-                window.location.href = adLink; 
-            } else {
-                playVideo(url, id, title);
+            // যদি ৬ ঘণ্টা (২১৬০০০০০ মিলি-সেকেন্ড) এর মধ্যে অ্যাড না দেখা হয়, তবেই অ্যাড দেখাবে
+            if (!lastAdTime || (now - lastAdTime) > 21600000) {
+                sessionStorage.setItem('lastAdTime', now);
+                window.open(adLink, '_blank');
             }
+            
+            playVideo(url, id, title);
         }
-
-        window.addEventListener('load', function() {
-            const pendingVideo = sessionStorage.getItem('pendingVideo');
-            if (pendingVideo) {
-                const video = JSON.parse(pendingVideo);
-                playVideo(video.url, video.id, video.title);
-                sessionStorage.removeItem('pendingVideo');
-            }
-        });
 
         function updatePlayerStats(id, videoData) {
             const base = getBaseStats(id);
@@ -298,7 +291,6 @@
         }
 
         function getRumbleEmbedUrl(url) {
-            // রুম্বেল লিঙ্ক ফরম্যাট ঠিক করার লজিক
             const match = url.match(/rumble\.com\/(?:embed\/|v[0-9]+-)?([a-zA-Z0-9]+)(?:-[a-zA-Z0-9]+)?\.html/);
             if (match && match[1]) return `https://rumble.com/embed/${match[1]}/`;
             return url.replace("rumble.com/", "rumble.com/embed/");
@@ -317,7 +309,6 @@
             } else if (url.includes("youtube.com") || url.includes("youtu.be")) {
                 window.open(`https://en1.savefrom.net/1-youtube-video-downloader-19uO/?url=${encodeURIComponent(url)}`, '_blank');
             } else if (url.includes("rumble.com")) {
-                // রুম্বেলের জন্য সেভফ্রম লিঙ্কে রিডাইরেক্ট
                 window.open(`https://en1.savefrom.net/1-youtube-video-downloader-19uO/?url=${encodeURIComponent(url)}`, '_blank');
             } else {
                 window.open(url, '_blank');

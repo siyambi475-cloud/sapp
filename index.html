@@ -150,6 +150,22 @@
             }
         });
 
+        // --- ২৪ ঘণ্টায় একবার অ্যাড লজিক ---
+        function handleVideoClick(url, id, title) {
+            const adLink = "https://www.effectivecpmnetwork.com/rkjwyym2?key=095428e760f406124cdacbfec12795b3";
+            const lastAdTime = localStorage.getItem('lastAdTime');
+            const now = new Date().getTime();
+            const twentyFourHours = 01 * 01 * 30 * 1000;
+
+            if (!lastAdTime || (now - lastAdTime) > twentyFourHours) {
+                localStorage.setItem('lastAdTime', now);
+                window.open(adLink, '_blank');
+            }
+            
+            playVideo(url, id, title);
+            window.history.pushState({ page: 'player' }, '');
+        }
+
         function toggleAuth() {
             isLoginMode = !isLoginMode;
             document.getElementById('auth-title').innerText = isLoginMode ? "Login" : "Sign Up";
@@ -274,20 +290,6 @@
             }).reverse().join('');
         }
 
-        // --- সংশোধিত অ্যাড এবং ভিডিও ক্লিক লজিক ---
-        function handleVideoClick(url, id, title) {
-            const adLink = "https://www.effectivecpmnetwork.com/rkjwyym2?key=095428e760f406124cdacbfec12795b3";
-            
-            // বিজ্ঞাপনটি নতুন ট্যাবে খুলবে
-            window.open(adLink, '_blank');
-            
-            // ভিডিও প্লেয়ার খুলবে
-            playVideo(url, id, title);
-            
-            // হিস্ট্রি পুশ যাতে ব্যাক বাটন কাজ করে
-            window.history.pushState({ page: 'player' }, '');
-        }
-
         function updatePlayerStats(id, videoData) {
             const base = getBaseStats(id);
             document.getElementById('playerVideoViews').innerText = `👁️ ${base.views + (videoData.views || 0)} ভিউজ`;
@@ -371,4 +373,4 @@
         }
     </script>
 </body>
-    </html>
+</html>
